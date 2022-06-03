@@ -1,0 +1,16 @@
+[package]
+name = "classical-raytracing"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["lib", "dylib"]
+
+[dependencies]
+spirv-std = { git = "https://github.com/EmbarkStudios/rust-gpu.git", features = ["glam"] }
+
+[profile.release.build-override]
+opt-level = 3
+codegen-units = 16
+[profile.dev.build-override]
+opt-level = 3
