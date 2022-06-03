@@ -5,7 +5,7 @@ edition = "2021"
 
 [workspace]
 members = [
-    "shaders/classical-raytracing",
+    "shaders/classical_raytracer",
 ]
 
 [dependencies]
