@@ -44,21 +44,20 @@ impl SwapchainSupportDetails {
         instance: &Instance,
         physical_device: PhysicalDevice,
     ) -> bool {
-        let required_extensions = [Swapchain::name()];
+        let required_extension = Swapchain::name();
 
         let extensions = unsafe {
             instance.enumerate_device_extension_properties(physical_device).unwrap()
         };
 
-        for required in required_extensions.iter() {
-            let found = extensions.iter().any(|ext| {
-                let name = unsafe { CStr::from_ptr(ext.extension_name.as_ptr()) };
-                required == &name
-            });
 
-            if !found {
-                return false;
-            }
+        let found = extensions.iter().any(|ext| {
+            let name = unsafe { CStr::from_ptr(ext.extension_name.as_ptr()) };
+            required_extension == name
+        });
+
+        if !found {
+            return false;
         }
 
         true

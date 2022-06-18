@@ -14,7 +14,7 @@ fn main() {
 fn to_window() {
     let window_handlers = WindowHandlers::new(DEFAULT_WINDOW_WIDHT, DEFAULT_WINDOW_HEIGHT);
 
-
+    let backend = cotton::renderer::backends::Backends::new(&window_handlers, true);
 }
 
 //TODO

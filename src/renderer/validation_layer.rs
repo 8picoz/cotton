@@ -3,7 +3,7 @@ use ash::{Entry, Instance, vk};
 use ash::extensions::ext::DebugUtils;
 use ash::prelude::VkResult;
 use ash::vk::{DebugUtilsMessageSeverityFlagsEXT, DebugUtilsMessageTypeFlagsEXT, DebugUtilsMessengerCreateInfoEXT, DebugUtilsMessengerEXT};
-use log::debug;
+use log::{debug, info};
 use tobj::LoadError::NormalParseError;
 
 pub const REQUIRED_LAYERS: [&str; 1] = ["VK_LAYER_KHRONOS_validation"];
@@ -18,13 +18,8 @@ impl ValidationLayer {
         vec![DebugUtils::name().as_ptr()]
     }
 
-    pub fn require_validation_layer_extension_names() -> Vec<&str> {
-        vec!["VK_LAYER_KHRONOS_validation"]
-    }
-
-    pub fn require_validation_layer_extension_names_ptr() -> Vec<*const i8> {
-        //ライフタイムがダメでは？
-        Self::require_validation_layer_extension_names().into_iter().map(|name| CString::new(name).unwrap().as_ptr()).collect()
+    pub fn require_validation_layer_extension_names() -> Vec<CString> {
+        vec![CString::new("VK_LAYER_KHRONOS_validation").unwrap()]
     }
 
     pub fn new_default(entry: &Entry, instance: &Instance) -> VkResult<Self> {
@@ -50,27 +45,29 @@ impl ValidationLayer {
                 .iter()
                 .any(|layer| {
                     let name = unsafe { CStr::from_ptr(layer.layer_name.as_ptr()) };
-                    let name = name.to_str().expect("Failed to get layer name pointer");
-                    required == name
+                    //let name = name.to_str().expect("Failed to get layer name pointer");
+                    required.as_c_str() == name
                 });
 
             if !found {
-                panic!("Validation layer not supported: {}", required);
+                panic!("Validation layer not supported: {:?}", required);
             }
         }
+
+        info!("Validation layer supported");
     }
 
     pub fn populate_debug_messenger_create_info() -> DebugUtilsMessengerCreateInfoEXT {
         DebugUtilsMessengerCreateInfoEXT::builder()
             .message_severity(
-                vk::DebugUtilsMessageSeverityFlagsEXT::VERBOSE
-                    | vk::DebugUtilsMessageSeverityFlagsEXT::WARNING
-                    | vk::DebugUtilsMessageSeverityFlagsEXT::ERROR,
+                DebugUtilsMessageSeverityFlagsEXT::VERBOSE
+                    | DebugUtilsMessageSeverityFlagsEXT::WARNING
+                    | DebugUtilsMessageSeverityFlagsEXT::ERROR,
             )
             .message_type(
-                vk::DebugUtilsMessageTypeFlagsEXT::GENERAL
-                    | vk::DebugUtilsMessageTypeFlagsEXT::VALIDATION
-                    | vk::DebugUtilsMessageTypeFlagsEXT::PERFORMANCE,
+                DebugUtilsMessageTypeFlagsEXT::GENERAL
+                    | DebugUtilsMessageTypeFlagsEXT::VALIDATION
+                    | DebugUtilsMessageTypeFlagsEXT::PERFORMANCE,
             )
             .pfn_user_callback(Some(vulkan_debug_callback))
             .build()
@@ -88,12 +85,12 @@ impl Drop for ValidationLayer {
 }
 
 unsafe extern "system" fn vulkan_debug_callback(
-    message_severity: vk::DebugUtilsMessageSeverityFlagsEXT,
-    message_type: vk::DebugUtilsMessageTypeFlagsEXT,
+    message_severity: DebugUtilsMessageSeverityFlagsEXT,
+    message_type: DebugUtilsMessageTypeFlagsEXT,
     p_callback_data: *const vk::DebugUtilsMessengerCallbackDataEXT,
     _p_user_data: *mut c_void,
 ) -> vk::Bool32 {
-    let severity = match _message_severity {
+    let severity = match message_severity {
         DebugUtilsMessageSeverityFlagsEXT::VERBOSE => "VERBOSE",
         DebugUtilsMessageSeverityFlagsEXT::WARNING => "WARNING",
         DebugUtilsMessageSeverityFlagsEXT::ERROR => "ERROR",

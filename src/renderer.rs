@@ -1,4 +1,4 @@
-mod backends;
+pub mod backends;
 mod validation_layer;
 mod constants;
 mod surfaces;

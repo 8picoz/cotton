@@ -16,18 +16,21 @@ impl QueueFamilyIndices {
     ) -> QueueFamilyIndices {
         let queue_families = unsafe { instance.get_physical_device_queue_family_properties(physical_device) };
 
+        let mut graphics_family = None;
+        let mut present_family = None;
+
         for (i, queue) in queue_families.iter().enumerate() {
             if queue.queue_flags.contains(QueueFlags::GRAPHICS) {
-                queue_family_indices.graphics_family = Some(i as u32);
+                graphics_family = Some(i as u32);
             }
 
-            if let surfaces = Some(surfaces) {
+            if let Some(surfaces) = surfaces {
                 let present_support = unsafe {
                     surfaces.surface.get_physical_device_surface_support(physical_device, i as u32, surfaces.surface_khr)
                 };
 
                 if present_support.unwrap() {
-                    queue_family_indices.present_family = Some(i as u32);
+                    present_family = Some(i as u32);
                 }
             }
         }
@@ -42,6 +45,7 @@ impl QueueFamilyIndices {
     pub fn is_device_suitable(
         &self,
         instance: &Instance,
+        physical_device: PhysicalDevice,
         surfaces: &Surfaces,
     ) -> bool {
         let extension_support = Surfaces::check_swapchain_support(instance, physical_device);
