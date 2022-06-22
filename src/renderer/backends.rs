@@ -5,7 +5,7 @@ use ash::vk;
 use ash::{Device, Entry, Instance};
 use ash::extensions::ext::DebugUtils;
 use ash::extensions::khr::{Surface, Win32Surface};
-use ash::vk::{DebugUtilsMessengerCreateInfoEXT, DeviceCreateInfo, DeviceQueueCreateInfo, PhysicalDevice, PhysicalDeviceFeatures, PhysicalDeviceVulkanMemoryModelFeatures};
+use ash::vk::{DebugUtilsMessengerCreateInfoEXT, DeviceCreateInfo, DeviceQueueCreateInfo, PhysicalDevice, PhysicalDeviceFeatures, PhysicalDeviceVulkanMemoryModelFeatures, Queue};
 use log::info;
 use tobj::LoadError::NormalParseError;
 use crate::renderer::queue_family_indices::QueueFamilyIndices;
@@ -19,6 +19,7 @@ pub struct Backends {
     pub physical_device: PhysicalDevice,
     pub device: Device,
     pub surfaces: Option<Surfaces>,
+    queue_family_indices: QueueFamilyIndices,
 }
 
 impl Backends {
@@ -36,14 +37,12 @@ impl Backends {
             ash::extensions::khr::RayTracingPipeline::name(),
         ]);
 
-
         let queue_family_indices = QueueFamilyIndices::new(&instance, Some(&surfaces), physical_device);
-
 
         let device = Self::create_logical_device(
             &instance,
             physical_device,
-            queue_family_indices.graphics_family.expect("Graphics family does not exist.")
+            &queue_family_indices
         );
 
         Ok(Self {
@@ -52,6 +51,7 @@ impl Backends {
             physical_device,
             device,
             surfaces: Some(surfaces),
+            queue_family_indices,
         })
     }
 
@@ -141,15 +141,22 @@ impl Backends {
         physical_device
     }
 
+    //with surface
     fn create_logical_device(
         instance: &Instance,
         physical_device: PhysicalDevice,
-        queue_family_index: u32,
+        queue_family_indices: &QueueFamilyIndices,
     ) -> Device {
-        let queue_create_info = [DeviceQueueCreateInfo::builder()
-            .queue_family_index(queue_family_index)
+        //with surface
+        let queue_create_info = [
+            DeviceQueueCreateInfo::builder()
+            .queue_family_index(queue_family_indices.graphics_family.unwrap())
             .queue_priorities(&[1.0f32])
-            .build()
+            .build(),
+            DeviceQueueCreateInfo::builder()
+                .queue_family_index(queue_family_indices.present_family.unwrap())
+                .queue_priorities(&[1.0f32])
+                .build()
         ];
 
         let mut vulkan_memory_model_features =
@@ -168,12 +175,36 @@ impl Backends {
 
         unsafe { instance.create_device(physical_device, &device_create_info, None).expect("Failed to create logical Device") }
     }
+
+    pub fn create_graphics_queue(
+        &self,
+        queue_index: u32,
+    ) -> Queue {
+        unsafe { self.device.get_device_queue(
+            self.queue_family_indices.graphics_family.expect("Failed to create graphics family queue"),
+                            queue_index
+        )}
+    }
+
+    pub fn create_present_queue(
+        &self,
+        queue_index: u32,
+    ) -> Queue {
+        unsafe { self.device.get_device_queue(
+            self.queue_family_indices.present_family.expect("Failed to create graphics family queue"),
+            queue_index
+        )}
+    }
 }
 
 impl Drop for Backends {
     fn drop(&mut self) {
         unsafe {
             self.device.destroy_device(None);
+
+            if let Some(surfaces) = self.surfaces.as_ref() {
+                surfaces.surface.destroy_surface(surfaces.surface_khr, None);
+            }
 
             self.instance.destroy_instance(None);
         }

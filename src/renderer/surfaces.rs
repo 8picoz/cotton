@@ -1,4 +1,6 @@
+use core::fmt;
 use std::ffi::{CStr, CString};
+use std::fmt::Formatter;
 use ash::extensions::khr::{Surface, Swapchain, Win32Surface};
 use ash::vk::{PhysicalDevice, SurfaceKHR};
 use ash::{Entry, Instance};
