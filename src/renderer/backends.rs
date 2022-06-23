@@ -4,7 +4,7 @@ use std::collections::HashSet;
 use ash::vk;
 use ash::{Device, Entry, Instance};
 use ash::extensions::ext::DebugUtils;
-use ash::extensions::khr::{Surface, Win32Surface};
+use ash::extensions::khr::{Surface, Swapchain, Win32Surface};
 use ash::vk::{DebugUtilsMessengerCreateInfoEXT, DeviceCreateInfo, DeviceQueueCreateInfo, PhysicalDevice, PhysicalDeviceFeatures, PhysicalDeviceVulkanMemoryModelFeatures, Queue};
 use log::info;
 use tobj::LoadError::NormalParseError;
@@ -42,7 +42,8 @@ impl Backends {
         let device = Self::create_logical_device(
             &instance,
             physical_device,
-            &queue_family_indices
+            &queue_family_indices,
+            enable_validation_layer,
         );
 
         Ok(Self {
@@ -146,18 +147,21 @@ impl Backends {
         instance: &Instance,
         physical_device: PhysicalDevice,
         queue_family_indices: &QueueFamilyIndices,
+        enable_validation_layer: bool,
     ) -> Device {
         //with surface
         let queue_create_info = [
             DeviceQueueCreateInfo::builder()
-            .queue_family_index(queue_family_indices.graphics_family.unwrap())
-            .queue_priorities(&[1.0f32])
-            .build(),
+                .queue_family_index(queue_family_indices.graphics_family.unwrap())
+                .queue_priorities(&[1.0f32])
+                .build(),
             DeviceQueueCreateInfo::builder()
                 .queue_family_index(queue_family_indices.present_family.unwrap())
                 .queue_priorities(&[1.0f32])
                 .build()
         ];
+
+        let device_features = PhysicalDeviceFeatures::builder().build();
 
         let mut vulkan_memory_model_features =
             PhysicalDeviceVulkanMemoryModelFeatures::builder()
@@ -167,11 +171,24 @@ impl Backends {
         let validation_extension_names = ValidationLayer::require_validation_layer_extension_names();
         let validation_extension_names_ptr = validation_extension_names.iter().map(|name| name.as_ptr()).collect::<Vec<_>>();
 
-        let device_create_info = DeviceCreateInfo::builder()
+        let extensions_names = [Swapchain::name()];
+        let extensions_names_ptr = extensions_names
+            .iter()
+            .map(|name| name.as_ptr())
+            .collect::<Vec<_>>();
+
+        let mut device_create_info = DeviceCreateInfo::builder()
             .push_next(&mut vulkan_memory_model_features)
+            .enabled_extension_names(&extensions_names_ptr)
             .queue_create_infos(&queue_create_info)
-            .enabled_layer_names(validation_extension_names_ptr.as_slice())
-            .build();
+            .enabled_features(&device_features);
+
+        if enable_validation_layer {
+            device_create_info = device_create_info
+                .enabled_layer_names(&validation_extension_names_ptr);
+        }
+
+        let device_create_info = device_create_info.build();
 
         unsafe { instance.create_device(physical_device, &device_create_info, None).expect("Failed to create logical Device") }
     }

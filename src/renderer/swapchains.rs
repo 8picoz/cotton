@@ -82,8 +82,6 @@ impl Swapchains {
         let swapchain = Swapchain::new(&backends.instance, &backends.device);
         let swapchain_khr = unsafe { swapchain.create_swapchain(&create_info, None).unwrap() };
 
-        info!("swapchain: {:?}", swapchain_khr);
-
         Self {
             swapchain,
             swapchain_khr,
@@ -91,7 +89,6 @@ impl Swapchains {
             extent,
         }
     }
-
     //画像単体で出力したいならvk::Imageを素のまま作ってそこに保存すれば良い
     pub fn get_swapchain_images(&self) -> Vec<Image> {
         unsafe { self.swapchain.get_swapchain_images(self.swapchain_khr).unwrap() }

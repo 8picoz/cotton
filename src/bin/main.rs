@@ -28,7 +28,8 @@ fn to_window() {
 
     let swapchains = Swapchains::new(&backends, window_size.clone());
 
-    let swapchain_images = swapchains.get_swapchain_images();
+
+    //let swapchain_images = swapchains.get_swapchain_images();
 }
 
 //TODO
