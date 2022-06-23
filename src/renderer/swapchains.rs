@@ -82,6 +82,8 @@ impl Swapchains {
         let swapchain = Swapchain::new(&backends.instance, &backends.device);
         let swapchain_khr = unsafe { swapchain.create_swapchain(&create_info, None).unwrap() };
 
+        info!("swapchain: {:?}", swapchain_khr);
+
         Self {
             swapchain,
             swapchain_khr,
