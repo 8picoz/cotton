@@ -1,11 +1,8 @@
 pub mod backends;
 pub mod swapchains;
-mod validation_layer;
-mod surfaces;
-mod backends_without_surface;
-mod queue_family_indices;
-mod swapchain_support_details;
-
-pub struct Renderer {
-
-}
+pub mod images;
+pub mod validation_layer;
+pub mod surfaces;
+pub mod backends_without_surface;
+pub mod queue_family_indices;
+pub mod swapchain_support_details;

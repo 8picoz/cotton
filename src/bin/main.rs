@@ -1,7 +1,9 @@
 use std::env;
 use ash::extensions::khr::Swapchain;
+use ash::vk::ImageSubresourceRange;
 use log::info;
 use cotton::constants::{DEFAULT_WINDOW_HEIGHT, DEFAULT_WINDOW_WIDHT};
+use cotton::renderer::images::Images;
 use cotton::renderer::swapchains::Swapchains;
 use cotton::window_handlers::WindowHandlers;
 
@@ -28,8 +30,7 @@ fn to_window() {
 
     let swapchains = Swapchains::new(&backends, window_size.clone());
 
-
-    //let swapchain_images = swapchains.get_swapchain_images();
+    let swapchain_images = swapchains.get_swapchain_images(&backends.device);
 }
 
 //TODO

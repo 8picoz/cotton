@@ -1,11 +1,13 @@
 use std::borrow::Borrow;
+use std::ops::Deref;
 use std::path::is_separator;
 use ash::extensions::khr::Swapchain;
-use ash::vk;
+use ash::{vk, Device};
 use ash::vk::{CompositeAlphaFlagsKHR, Extent2D, Format, Image, ImageUsageFlags, SharingMode, SwapchainCreateInfoKHR, SwapchainKHR};
 use log::{debug, info};
 use winit::dpi::{LogicalSize, Size};
 use crate::renderer::backends::Backends;
+use crate::renderer::images::Images;
 use crate::renderer::queue_family_indices::QueueFamilyIndices;
 use crate::renderer::surfaces::Surfaces;
 use crate::renderer::swapchain_support_details::SwapchainSupportDetails;
@@ -91,9 +93,11 @@ impl Swapchains {
             extent,
         }
     }
-    //画像単体で出力したいならvk::Imageを素のまま作ってそこに保存すれば良い
-    pub fn get_swapchain_images(&self) -> Vec<Image> {
-        unsafe { self.swapchain.get_swapchain_images(self.swapchain_khr).unwrap() }
+
+    pub fn get_swapchain_images<'a>(&'a self, device: &'a Device) -> Images {
+        let images = unsafe { self.swapchain.get_swapchain_images(self.swapchain_khr).unwrap() };
+
+        Images::new(device, images, self.format)
     }
 }
 
