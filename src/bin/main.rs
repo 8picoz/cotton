@@ -1,9 +1,10 @@
 use std::env;
-use ash::extensions::khr::Swapchain;
-use ash::vk::ImageSubresourceRange;
-use log::info;
+
+
+
 use cotton::constants::{DEFAULT_WINDOW_HEIGHT, DEFAULT_WINDOW_WIDHT};
-use cotton::renderer::images::Images;
+
+use cotton::renderer::render_passes::RenderPasses;
 use cotton::renderer::swapchains::Swapchains;
 use cotton::window_handlers::WindowHandlers;
 
@@ -25,12 +26,14 @@ fn to_window() {
         cotton::renderer::backends::Backends::new(&window_handlers, true)
             .expect("Failed to create backends");
 
-    let graphics_queue = backends.create_graphics_queue(0);
-    let present_queue = backends.create_present_queue(0);
+    let _graphics_queue = backends.create_graphics_queue(0);
+    let _present_queue = backends.create_present_queue(0);
 
-    let swapchains = Swapchains::new(&backends, window_size.clone());
-
+    let swapchains = Swapchains::new(&backends, window_size);
     let swapchain_images = swapchains.get_swapchain_images(&backends.device);
+
+    let render_passes = RenderPasses::new(&backends, swapchains.format, swapchain_images.image_views.clone(), swapchains.extent);
+
 }
 
 //TODO
