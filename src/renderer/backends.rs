@@ -1,16 +1,17 @@
 use std::ffi::{c_void, CStr, CString};
 use std::os::raw::c_char;
 use std::collections::HashSet;
+use std::default::default;
 use ash::vk;
 use ash::{Device, Entry, Instance};
 use ash::extensions::ext::DebugUtils;
-use ash::extensions::khr::{Surface, Swapchain, Win32Surface};
-use ash::vk::{DebugUtilsMessengerCreateInfoEXT, DeviceCreateInfo, DeviceQueueCreateInfo, PhysicalDevice, PhysicalDeviceFeatures, PhysicalDeviceVulkanMemoryModelFeatures, Queue};
+use ash::extensions::khr::{AccelerationStructure, DeferredHostOperations, RayTracingPipeline, Surface, Swapchain, Win32Surface};
+use ash::vk::{DebugUtilsMessengerCreateInfoEXT, DeviceCreateInfo, DeviceQueueCreateInfo, ExtScalarBlockLayoutFn, KhrGetMemoryRequirements2Fn, KhrSpirv14Fn, PhysicalDevice, PhysicalDeviceAccelerationStructureFeaturesKHR, PhysicalDeviceFeatures, PhysicalDeviceFeatures2, PhysicalDeviceRayTracingPipelineFeaturesKHR, PhysicalDeviceVulkan12Features, PhysicalDeviceVulkanMemoryModelFeatures, Queue};
 use log::info;
 use tobj::LoadError::NormalParseError;
 use crate::renderer::queue_family_indices::QueueFamilyIndices;
 use crate::renderer::surfaces::Surfaces;
-use crate::renderer::validation_layer::ValidationLayer;
+use crate::renderer::validation_layer::{REQUIRED_LAYERS, ValidationLayer};
 use crate::window_handlers::WindowHandlers;
 
 pub struct Backends {
@@ -32,9 +33,10 @@ impl Backends {
 
         let physical_device = Self::pick_physical_device(&instance, &surfaces,
         &[
-            ash::extensions::khr::AccelerationStructure::name(),
-            ash::extensions::khr::DeferredHostOperations::name(),
-            ash::extensions::khr::RayTracingPipeline::name(),
+            Swapchain::name(),
+            AccelerationStructure::name(),
+            DeferredHostOperations::name(),
+            RayTracingPipeline::name(),
         ]);
 
         let queue_family_indices = QueueFamilyIndices::new(&instance, Some(&surfaces), physical_device);
@@ -67,7 +69,7 @@ impl Backends {
 
         let mut extension_names = Surfaces::require_surface_extension_names();
 
-        let mut debug_extensions_names = ValidationLayer::require_debug_utils_extension_names_ptr();
+        let mut debug_extensions_names = ValidationLayer::require_debug_utils_extension_names_c_char();
 
         if enable_validation_layer {
             extension_names.append(&mut debug_extensions_names);
@@ -77,7 +79,7 @@ impl Backends {
             .application_info(&app_info)
             .enabled_extension_names(&extension_names);
 
-        let validation_extension_names = ValidationLayer::require_validation_layer_extension_names();
+        let validation_extension_names = ValidationLayer::require_validation_layer_extension_names_cstring();
         let validation_extension_names_ptr = validation_extension_names.iter().map(|name| name.as_ptr()).collect::<Vec<_>>();
 
         let debug_create_info = ValidationLayer::populate_debug_messenger_create_info();
@@ -161,36 +163,63 @@ impl Backends {
                 .build()
         ];
 
-        let device_features = PhysicalDeviceFeatures::builder().build();
+        let mut features2 = PhysicalDeviceFeatures2::default();
+        unsafe { instance.get_physical_device_features2(physical_device, &mut features2) };
 
-        let mut vulkan_memory_model_features =
-            PhysicalDeviceVulkanMemoryModelFeatures::builder()
-                .vulkan_memory_model(true)
-                .build();
+        let mut features12 = PhysicalDeviceVulkan12Features::builder()
+            //8bitのsigned intがサポートされているかどうか
+            .shader_int8(true)
+            //vkGetBufferDeviceAddressを使用して取得したアドレスを返してStorageBufferに対して悪世することが出来るかをサポートしているかどうか
+            .buffer_device_address(true)
+            //Vulkan専用のメモリモデルがサポートされているかどうか
+            .vulkan_memory_model(true)
+            .build();
 
-        let validation_extension_names = ValidationLayer::require_validation_layer_extension_names();
-        let validation_extension_names_ptr = validation_extension_names.iter().map(|name| name.as_ptr()).collect::<Vec<_>>();
+        let mut as_feature = PhysicalDeviceAccelerationStructureFeaturesKHR::builder()
+            .acceleration_structure(true)
+            .build();
 
-        let extensions_names = [Swapchain::name()];
-        let extensions_names_ptr = extensions_names
-            .iter()
-            .map(|name| name.as_ptr())
-            .collect::<Vec<_>>();
+        let mut raytracing_pipeline = PhysicalDeviceRayTracingPipelineFeaturesKHR::builder()
+            .ray_tracing_pipeline(true)
+            .build();
 
+        let mut extension_names = vec![
+            Swapchain::name().as_ptr(),
+            RayTracingPipeline::name().as_ptr(),
+            AccelerationStructure::name().as_ptr(),
+            //非同期処理をするに当たってのlockを提供する(?)
+            DeferredHostOperations::name().as_ptr(),
+            //Vulkan1.2時代はSpir-vの1.4がサポートされているかは環境次第だった？
+            //KhrSpirv14Fn::name().as_ptr(),
+
+            //uniform bufferやらstorage bufferなどにC言語ライクな構造体を対応させることが出来る
+            //非スカラー型などに対応できる
+            ExtScalarBlockLayoutFn::name().as_ptr(),
+            //VkMemoryRequirementsやVkSparseImageMemoryRequirements構造体に対してsTypeやpNextを生やすようにする
+            KhrGetMemoryRequirements2Fn::name().as_ptr(),
+        ];
+        
         let mut device_create_info = DeviceCreateInfo::builder()
-            .push_next(&mut vulkan_memory_model_features)
-            .enabled_extension_names(&extensions_names_ptr)
-            .queue_create_infos(&queue_create_info)
-            .enabled_features(&device_features);
+            .push_next(&mut features2)
+            .push_next(&mut features12)
+            .push_next(&mut as_feature)
+            .push_next(&mut raytracing_pipeline)
+            .enabled_extension_names(&extension_names)
+            .queue_create_infos(&queue_create_info);
 
         if enable_validation_layer {
-            device_create_info = device_create_info
-                .enabled_layer_names(&validation_extension_names_ptr);
+            let mut validation_extension_names = ValidationLayer::require_validation_layer_extension_names_c_char();
+
+            device_create_info
+                .enabled_layer_names(validation_extension_names.as_slice());
         }
 
         let device_create_info = device_create_info.build();
 
-        unsafe { instance.create_device(physical_device, &device_create_info, None).expect("Failed to create logical Device") }
+        unsafe {
+            instance.create_device(physical_device, &device_create_info, None)
+                .expect("Failed to create logical Device")
+        }
     }
 
     pub fn create_graphics_queue(

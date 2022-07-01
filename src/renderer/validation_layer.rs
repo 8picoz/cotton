@@ -1,4 +1,4 @@
-use std::ffi::{c_void, CStr, CString};
+use std::ffi::{c_char, c_void, CStr, CString};
 use ash::{Entry, Instance, vk};
 use ash::extensions::ext::DebugUtils;
 use ash::prelude::VkResult;
@@ -14,12 +14,20 @@ pub struct ValidationLayer {
 }
 
 impl ValidationLayer {
-    pub fn require_debug_utils_extension_names_ptr() -> Vec<*const i8> {
+    pub fn require_debug_utils_extension_names_c_char() -> Vec<*const c_char> {
         vec![DebugUtils::name().as_ptr()]
     }
 
-    pub fn require_validation_layer_extension_names() -> Vec<CString> {
-        vec![CString::new("VK_LAYER_KHRONOS_validation").unwrap()]
+    pub fn require_validation_layer_extension_names_cstring() -> Vec<CString> {
+        REQUIRED_LAYERS.map(|item| CString::new(item)).into_iter().collect()
+    }
+
+    pub fn require_validation_layer_extension_names_c_char() -> Vec<*const c_char> {
+        Self::require_validation_layer_extension_names_cstring()
+            .iter()
+            .map(|item| item.as_ptr())
+            .into_iter()
+            .collect()
     }
 
     pub fn new_default(entry: &Entry, instance: &Instance) -> VkResult<Self> {
@@ -38,7 +46,7 @@ impl ValidationLayer {
     }
 
     pub fn check_validation_layer_support(entry: &Entry) {
-        for required in Self::require_validation_layer_extension_names() {
+        for required in Self::require_validation_layer_extension_names_cstring() {
             let found = entry
                 .enumerate_instance_layer_properties()
                 .unwrap()
