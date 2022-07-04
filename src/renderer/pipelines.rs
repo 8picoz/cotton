@@ -1,6 +1,6 @@
 use std::ffi::{CStr, CString};
 use ash::{Device, vk};
-use ash::vk::{Extent2D, Pipeline, PipelineShaderStageCreateInfo, ShaderModule, ShaderStageFlags};
+use ash::vk::{Extent2D, PhysicalDeviceRayTracingPipelinePropertiesKHR, Pipeline, PipelineShaderStageCreateInfo, ShaderModule, ShaderStageFlags};
 use crate::constants::{FRAGMENT_SHADER_ENTRY_NAME, MISS_SHADER_ENTRY_NAME, RAY_GENERATION_SHADER_ENTRY_NAME, SPHERE_CLOSEST_HIT_SHADER_ENTRY_NAME, SPHERE_INTERSECTION_SHADER_ENTRY_NAME, TRIANGLE_ANY_HIT_SHADER_ENTRY_NAME, TRIANGLE_CLOSEST_HIT_SHADER_ENTRY_NAME, VERTEX_SHADER_ENTRY_NAME};
 use crate::renderer::render_passes::RenderPasses;
 
@@ -8,11 +8,9 @@ pub struct Pipelines<'a> {
     pub device: &'a Device,
 }
 
-impl Pipelines {
+impl Pipelines<'_> {
     //with raytracing
     pub fn new(device: &Device, shader_module: ShaderModule, swapchain_extent: Extent2D, render_passes: &RenderPasses) -> Self {
-
-        let
 
         let ray_generation_stage_info = PipelineShaderStageCreateInfo::builder()
             .stage(ShaderStageFlags::RAYGEN_KHR)
@@ -59,9 +57,12 @@ impl Pipelines {
             triangle_any_hit_stage_info,
         ];
 
+        let pipeline = unsafe {
+
+        };
+
         Self {
             device,
-
         }
     }
 }

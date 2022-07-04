@@ -1,13 +1,12 @@
 use std::ffi::{c_void, CStr, CString};
 use std::os::raw::c_char;
 use std::collections::HashSet;
-use std::default::default;
 use ash::vk;
 use ash::{Device, Entry, Instance};
 use ash::extensions::ext::DebugUtils;
 use ash::extensions::khr::{AccelerationStructure, DeferredHostOperations, RayTracingPipeline, Surface, Swapchain, Win32Surface};
-use ash::vk::{DebugUtilsMessengerCreateInfoEXT, DeviceCreateInfo, DeviceQueueCreateInfo, ExtScalarBlockLayoutFn, KhrGetMemoryRequirements2Fn, KhrSpirv14Fn, PhysicalDevice, PhysicalDeviceAccelerationStructureFeaturesKHR, PhysicalDeviceFeatures, PhysicalDeviceFeatures2, PhysicalDeviceRayTracingPipelineFeaturesKHR, PhysicalDeviceVulkan12Features, PhysicalDeviceVulkanMemoryModelFeatures, Queue};
-use log::info;
+use ash::vk::{DebugUtilsMessengerCreateInfoEXT, DeviceCreateInfo, DeviceQueueCreateInfo, ExtScalarBlockLayoutFn, KhrGetMemoryRequirements2Fn, KhrSpirv14Fn, PhysicalDevice, PhysicalDeviceAccelerationStructureFeaturesKHR, PhysicalDeviceBufferDeviceAddressFeatures, PhysicalDeviceDescriptorIndexingFeaturesEXT, PhysicalDeviceFeatures, PhysicalDeviceFeatures2, PhysicalDeviceImagelessFramebufferFeaturesKHR, PhysicalDeviceRayTracingPipelineFeaturesKHR, PhysicalDeviceRayTracingPipelinePropertiesKHR, PhysicalDeviceScalarBlockLayoutFeaturesEXT, PhysicalDeviceShaderFloat16Int8Features, PhysicalDeviceVulkan12Features, PhysicalDeviceVulkanMemoryModelFeatures, PhysicalDeviceVulkanMemoryModelFeaturesKHR, Queue};
+use log::{debug, info};
 use tobj::LoadError::NormalParseError;
 use crate::renderer::queue_family_indices::QueueFamilyIndices;
 use crate::renderer::surfaces::Surfaces;
@@ -21,6 +20,10 @@ pub struct Backends {
     pub device: Device,
     pub surfaces: Option<Surfaces>,
     queue_family_indices: QueueFamilyIndices,
+
+    pub(crate) acceleration_structure: AccelerationStructure,
+    pub(crate) ray_tracing_pipeline: RayTracingPipeline,
+    pub(crate) ray_tracing_pipeline_properties: PhysicalDeviceRayTracingPipelinePropertiesKHR,
 }
 
 impl Backends {
@@ -47,6 +50,11 @@ impl Backends {
             &queue_family_indices,
             enable_validation_layer,
         );
+
+        //Raytracing
+
+
+        let acceleration_structure =
 
         Ok(Self {
             entry,
@@ -163,7 +171,28 @@ impl Backends {
                 .build()
         ];
 
-        let mut features2 = PhysicalDeviceFeatures2::default();
+        let mut scalar_block = PhysicalDeviceScalarBlockLayoutFeaturesEXT::default();
+        let mut descriptor_indexing = PhysicalDeviceDescriptorIndexingFeaturesEXT::default();
+        let mut imageless_framebuffer = PhysicalDeviceImagelessFramebufferFeaturesKHR::default();
+        let mut shader_float16_int8 = PhysicalDeviceShaderFloat16Int8Features::default();
+        let mut vulkan_memory_model = PhysicalDeviceVulkanMemoryModelFeaturesKHR::default();
+        let mut get_buffer_device_address_features = PhysicalDeviceBufferDeviceAddressFeatures::default();
+
+        //Raytracing
+        let mut acceleration_structure_features = PhysicalDeviceAccelerationStructureFeaturesKHR::default();
+        let mut ray_tracing_pipeline_features = PhysicalDeviceRayTracingPipelineFeaturesKHR::default();
+
+        let mut features2 = PhysicalDeviceFeatures2::builder()
+            .push_next(&mut scalar_block)
+            .push_next(&mut descriptor_indexing)
+            .push_next(&mut imageless_framebuffer)
+            .push_next(&mut shader_float16_int8)
+            .push_next(&mut vulkan_memory_model)
+            .push_next(&mut get_buffer_device_address_features)
+            .push_next(&mut acceleration_structure_features)
+            .push_next(&mut ray_tracing_pipeline_features)
+            .build();
+
         unsafe { instance.get_physical_device_features2(physical_device, &mut features2) };
 
         let mut features12 = PhysicalDeviceVulkan12Features::builder()
@@ -198,7 +227,7 @@ impl Backends {
             //VkMemoryRequirementsやVkSparseImageMemoryRequirements構造体に対してsTypeやpNextを生やすようにする
             KhrGetMemoryRequirements2Fn::name().as_ptr(),
         ];
-        
+
         let mut device_create_info = DeviceCreateInfo::builder()
             .push_next(&mut features2)
             .push_next(&mut features12)
@@ -240,6 +269,33 @@ impl Backends {
             self.queue_family_indices.present_family.expect("Failed to create graphics family queue"),
             queue_index
         )}
+    }
+
+    pub fn display_support_extension(&self) {
+        unsafe {
+            let extension_properties = self.physical_device
+                .instance
+                .raw
+                .enumerate_device_extension_properties(pdevice.raw)?;
+            debug!("Extension properties:\n{:#?}", &extension_properties);
+
+            let supported_extensions: HashSet<String> = extension_properties
+                .iter()
+                .map(|ext| {
+                    std::ffi::CStr::from_ptr(ext.extension_name.as_ptr() as *const c_char)
+                        .to_string_lossy()
+                        .as_ref()
+                        .to_owned()
+                })
+                .collect();
+
+            for &ext in &device_extension_names {
+                let ext = std::ffi::CStr::from_ptr(ext).to_string_lossy();
+                if !supported_extensions.contains(ext.as_ref()) {
+                    panic!("Device extension not supported: {}", ext);
+                }
+            }
+        }
     }
 }
 
