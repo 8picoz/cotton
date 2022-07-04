@@ -195,6 +195,19 @@ impl Backends {
 
         unsafe { instance.get_physical_device_features2(physical_device, &mut features2) };
 
+        debug!("{:#?}", &scalar_block);
+        debug!("{:#?}", &descriptor_indexing);
+        debug!("{:#?}", &imageless_framebuffer);
+        debug!("{:#?}", &shader_float16_int8);
+        debug!("{:#?}", &vulkan_memory_model);
+        debug!("{:#?}", &get_buffer_device_address_features);
+        debug!("{:#?}", &acceleration_structure_features);
+        debug!("{:#?}", &ray_tracing_pipeline_features);
+
+        /*
+
+        //PhysicalDeviceVulkan12Featuresは上部のPhysicalDeviceFeatures2のpNextに繋げばその機能がサポートされてるかの確認として使うことが出来るし、
+        //DeviceCreateInfoに繋げばその機能の有効化にも使える
         let mut features12 = PhysicalDeviceVulkan12Features::builder()
             //8bitのsigned intがサポートされているかどうか
             .shader_int8(true)
@@ -211,6 +224,8 @@ impl Backends {
         let mut raytracing_pipeline = PhysicalDeviceRayTracingPipelineFeaturesKHR::builder()
             .ray_tracing_pipeline(true)
             .build();
+
+         */
 
         let mut extension_names = vec![
             Swapchain::name().as_ptr(),
@@ -230,9 +245,11 @@ impl Backends {
 
         let mut device_create_info = DeviceCreateInfo::builder()
             .push_next(&mut features2)
+            /*
             .push_next(&mut features12)
             .push_next(&mut as_feature)
             .push_next(&mut raytracing_pipeline)
+            */
             .enabled_extension_names(&extension_names)
             .queue_create_infos(&queue_create_info);
 
