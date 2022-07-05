@@ -7,3 +7,4 @@ pub mod queue_family_indices;
 pub mod swapchain_support_details;
 pub mod render_passes;
 pub mod pipelines;
+mod acceleration_structures;

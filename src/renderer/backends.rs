@@ -5,7 +5,7 @@ use ash::vk;
 use ash::{Device, Entry, Instance};
 use ash::extensions::ext::DebugUtils;
 use ash::extensions::khr::{AccelerationStructure, DeferredHostOperations, RayTracingPipeline, Surface, Swapchain, Win32Surface};
-use ash::vk::{DebugUtilsMessengerCreateInfoEXT, DeviceCreateInfo, DeviceQueueCreateInfo, ExtScalarBlockLayoutFn, KhrGetMemoryRequirements2Fn, KhrSpirv14Fn, PhysicalDevice, PhysicalDeviceAccelerationStructureFeaturesKHR, PhysicalDeviceBufferDeviceAddressFeatures, PhysicalDeviceDescriptorIndexingFeaturesEXT, PhysicalDeviceFeatures, PhysicalDeviceFeatures2, PhysicalDeviceImagelessFramebufferFeaturesKHR, PhysicalDeviceRayTracingPipelineFeaturesKHR, PhysicalDeviceRayTracingPipelinePropertiesKHR, PhysicalDeviceScalarBlockLayoutFeaturesEXT, PhysicalDeviceShaderFloat16Int8Features, PhysicalDeviceVulkan12Features, PhysicalDeviceVulkanMemoryModelFeatures, PhysicalDeviceVulkanMemoryModelFeaturesKHR, Queue};
+use ash::vk::{DebugUtilsMessengerCreateInfoEXT, DeviceCreateInfo, DeviceQueueCreateInfo, ExtScalarBlockLayoutFn, KhrGetMemoryRequirements2Fn, KhrSpirv14Fn, PhysicalDevice, PhysicalDeviceAccelerationStructureFeaturesKHR, PhysicalDeviceBufferDeviceAddressFeatures, PhysicalDeviceDescriptorIndexingFeaturesEXT, PhysicalDeviceFeatures, PhysicalDeviceFeatures2, PhysicalDeviceImagelessFramebufferFeaturesKHR, PhysicalDeviceProperties2, PhysicalDeviceRayTracingPipelineFeaturesKHR, PhysicalDeviceRayTracingPipelinePropertiesKHR, PhysicalDeviceScalarBlockLayoutFeaturesEXT, PhysicalDeviceShaderFloat16Int8Features, PhysicalDeviceVulkan12Features, PhysicalDeviceVulkanMemoryModelFeatures, PhysicalDeviceVulkanMemoryModelFeaturesKHR, Queue};
 use log::{debug, info};
 use tobj::LoadError::NormalParseError;
 use crate::renderer::queue_family_indices::QueueFamilyIndices;
@@ -20,10 +20,6 @@ pub struct Backends {
     pub device: Device,
     pub surfaces: Option<Surfaces>,
     queue_family_indices: QueueFamilyIndices,
-
-    pub(crate) acceleration_structure: AccelerationStructure,
-    pub(crate) ray_tracing_pipeline: RayTracingPipeline,
-    pub(crate) ray_tracing_pipeline_properties: PhysicalDeviceRayTracingPipelinePropertiesKHR,
 }
 
 impl Backends {
@@ -50,11 +46,6 @@ impl Backends {
             &queue_family_indices,
             enable_validation_layer,
         );
-
-        //Raytracing
-
-
-        let acceleration_structure =
 
         Ok(Self {
             entry,
@@ -314,6 +305,7 @@ impl Backends {
             }
         }
     }
+
 }
 
 impl Drop for Backends {
