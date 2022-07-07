@@ -5,7 +5,7 @@ use ash::vk;
 use ash::{Device, Entry, Instance};
 use ash::extensions::ext::DebugUtils;
 use ash::extensions::khr::{AccelerationStructure, DeferredHostOperations, RayTracingPipeline, Surface, Swapchain, Win32Surface};
-use ash::vk::{DebugUtilsMessengerCreateInfoEXT, DeviceCreateInfo, DeviceQueueCreateInfo, ExtScalarBlockLayoutFn, KhrGetMemoryRequirements2Fn, KhrSpirv14Fn, PhysicalDevice, PhysicalDeviceAccelerationStructureFeaturesKHR, PhysicalDeviceBufferDeviceAddressFeatures, PhysicalDeviceDescriptorIndexingFeaturesEXT, PhysicalDeviceFeatures, PhysicalDeviceFeatures2, PhysicalDeviceImagelessFramebufferFeaturesKHR, PhysicalDeviceProperties2, PhysicalDeviceRayTracingPipelineFeaturesKHR, PhysicalDeviceRayTracingPipelinePropertiesKHR, PhysicalDeviceScalarBlockLayoutFeaturesEXT, PhysicalDeviceShaderFloat16Int8Features, PhysicalDeviceVulkan12Features, PhysicalDeviceVulkanMemoryModelFeatures, PhysicalDeviceVulkanMemoryModelFeaturesKHR, Queue};
+use ash::vk::{DebugUtilsMessengerCreateInfoEXT, DeviceCreateInfo, DeviceQueueCreateInfo, ExtScalarBlockLayoutFn, KhrGetMemoryRequirements2Fn, KhrSpirv14Fn, PhysicalDevice, PhysicalDeviceAccelerationStructureFeaturesKHR, PhysicalDeviceBufferDeviceAddressFeatures, PhysicalDeviceDescriptorIndexingFeaturesEXT, PhysicalDeviceFeatures, PhysicalDeviceFeatures2, PhysicalDeviceImagelessFramebufferFeaturesKHR, PhysicalDeviceMemoryProperties, PhysicalDeviceProperties2, PhysicalDeviceRayTracingPipelineFeaturesKHR, PhysicalDeviceRayTracingPipelinePropertiesKHR, PhysicalDeviceScalarBlockLayoutFeaturesEXT, PhysicalDeviceShaderFloat16Int8Features, PhysicalDeviceVulkan12Features, PhysicalDeviceVulkanMemoryModelFeatures, PhysicalDeviceVulkanMemoryModelFeaturesKHR, Queue};
 use log::{debug, info};
 use tobj::LoadError::NormalParseError;
 use crate::renderer::queue_family_indices::QueueFamilyIndices;
@@ -19,6 +19,8 @@ pub struct Backends {
     pub physical_device: PhysicalDevice,
     pub device: Device,
     pub surfaces: Option<Surfaces>,
+
+    pub(crate) device_memory_properties: PhysicalDeviceMemoryProperties,
     queue_family_indices: QueueFamilyIndices,
 }
 
@@ -47,12 +49,17 @@ impl Backends {
             enable_validation_layer,
         );
 
+        let device_memory_properties = unsafe {
+            instance.get_physical_device_memory_properties(physical_device)
+        };
+
         Ok(Self {
             entry,
             instance,
             physical_device,
             device,
             surfaces: Some(surfaces),
+            device_memory_properties,
             queue_family_indices,
         })
     }
