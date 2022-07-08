@@ -1,4 +1,5 @@
 use ash::Device;
+use ash::util::Align;
 use ash::vk::{Buffer, BufferCreateInfo, BufferUsageFlags, DeviceMemory, DeviceSize, MemoryAllocateFlags, MemoryAllocateFlagsInfo, MemoryAllocateInfo, MemoryMapFlags, MemoryPropertyFlags, PhysicalDeviceMemoryProperties, SharingMode};
 
 pub struct Buffers<'a> {
@@ -76,7 +77,19 @@ impl<'a> Buffers<'a> {
         }
     }
 
-    fn map(&mut self, size: DeviceSize) -> *mut std::ffi::c_void {
+    pub fn store<T: Copy>(&mut self, data: &[T]) {
+        let size = (std::mem::size_of::<T>() * data.len()) as u64;
+        //すでにBuffersが確保している領域よりも大きかったら弾く
+        assert!(self.size >= size)
+        let mapped_ptr = self.map(size);
+        let mut mapped_slice = unsafe {
+            Align::new(mapped_ptr, std::mem::align_of::<T>() as u64, size)
+        };
+        mapped_slice.copy_from_slice(&data);
+        self.unmap();
+    }
+
+    pub fn map(&mut self, size: DeviceSize) -> *mut std::ffi::c_void {
         unsafe {
             self.device
                 .map_memory(self.memory, 0, size, MemoryMapFlags::empty())
@@ -84,7 +97,7 @@ impl<'a> Buffers<'a> {
         }
     }
 
-    fn unmap(&self) {
+    pub fn unmap(&self) {
         unsafe {
             self.device.unmap_memory(self.memory)
         }
