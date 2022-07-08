@@ -1,6 +1,6 @@
 use ash::Device;
 use ash::util::Align;
-use ash::vk::{Buffer, BufferCreateInfo, BufferUsageFlags, DeviceMemory, DeviceSize, MemoryAllocateFlags, MemoryAllocateFlagsInfo, MemoryAllocateInfo, MemoryMapFlags, MemoryPropertyFlags, PhysicalDeviceMemoryProperties, SharingMode};
+use ash::vk::{Buffer, BufferCreateInfo, BufferDeviceAddressInfo, BufferUsageFlags, DeviceMemory, DeviceSize, MemoryAllocateFlags, MemoryAllocateFlagsInfo, MemoryAllocateInfo, MemoryMapFlags, MemoryPropertyFlags, PhysicalDeviceMemoryProperties, SharingMode};
 
 pub struct Buffers<'a> {
     pub device: &'a Device,
@@ -74,6 +74,17 @@ impl<'a> Buffers<'a> {
             raw,
             size,
             memory,
+        }
+    }
+
+    pub fn get_buffer_address(&self) -> u64 {
+        let buffer_device_address_info = BufferDeviceAddressInfo::builder()
+            .buffer(self.raw)
+            .build();
+
+        unsafe {
+            self.device
+                .get_buffer_device_address(&buffer_device_address_info)
         }
     }
 
