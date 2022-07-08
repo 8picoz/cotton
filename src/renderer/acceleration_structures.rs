@@ -1,5 +1,5 @@
 use ash::extensions::khr::AccelerationStructure;
-use ash::vk::{AabbPositionsKHR, Buffer, BufferUsageFlags, MemoryPropertyFlags};
+use ash::vk::{AabbPositionsKHR, Buffer, BufferUsageFlags, MemoryPropertyFlags, PhysicalDeviceMemoryProperties};
 use crate::buffer::Buffers;
 use crate::renderer::backends::Backends;
 
@@ -9,7 +9,7 @@ pub struct AccelerationStructures {
 }
 
 impl AccelerationStructures {
-    pub fn new(backends: &Backends) -> Self {
+    pub fn new(backends: &Backends, device_memory_properties: PhysicalDeviceMemoryProperties) -> Self {
         let acceleration_structure
             = AccelerationStructure::new(&backends.instance, &backends.device);
 
@@ -30,7 +30,7 @@ impl AccelerationStructures {
                 | MemoryPropertyFlags::HOST_VISIBLE
                 | MemoryPropertyFlags::HOST_COHERENT,
             &backends.device,
-
+            device_memory_properties,
         );
 
 

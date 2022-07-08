@@ -1,18 +1,19 @@
 use ash::Device;
-use ash::vk::{Buffer, BufferCreateInfo, BufferUsageFlags, DeviceMemory, DeviceSize, MemoryAllocateFlags, MemoryAllocateFlagsInfo, MemoryAllocateInfo, MemoryPropertyFlags, PhysicalDeviceMemoryProperties, SharingMode};
+use ash::vk::{Buffer, BufferCreateInfo, BufferUsageFlags, DeviceMemory, DeviceSize, MemoryAllocateFlags, MemoryAllocateFlagsInfo, MemoryAllocateInfo, MemoryMapFlags, MemoryPropertyFlags, PhysicalDeviceMemoryProperties, SharingMode};
 
-pub struct Buffers {
+pub struct Buffers<'a> {
+    pub device: &'a Device,
     pub raw: Buffer,
     pub size: DeviceSize,
     pub memory: DeviceMemory,
 }
 
-impl Buffers {
+impl<'a> Buffers<'a> {
     pub fn new(
         size: DeviceSize,
         usage: BufferUsageFlags,
         memory_properties: MemoryPropertyFlags,
-        device: &Device,
+        device: &'a Device,
         device_memory_properties: PhysicalDeviceMemoryProperties,
     ) -> Self {
         let buffer_info = BufferCreateInfo::builder()
@@ -46,6 +47,7 @@ impl Buffers {
             .flags(MemoryAllocateFlags::DEVICE_ADDRESS)
             .build();
 
+
         let mut allocate_info = MemoryAllocateInfo::builder();
 
         //SHADER_DEVICE_ADDRESSはvkGetBufferDeviceAddressからバッファのデバイスアドレスを取得することができ、それを使用することでシェーダー内からアクセスすることが出来る
@@ -67,9 +69,33 @@ impl Buffers {
         }
 
         Self {
+            device,
             raw,
             size,
             memory,
+        }
+    }
+
+    fn map(&mut self, size: DeviceSize) -> *mut std::ffi::c_void {
+        unsafe {
+            self.device
+                .map_memory(self.memory, 0, size, MemoryMapFlags::empty())
+                .unwrap()
+        }
+    }
+
+    fn unmap(&self) {
+        unsafe {
+            self.device.unmap_memory(self.memory)
+        }
+    }
+}
+
+impl Drop for Buffers<'_> {
+    fn drop(&mut self) {
+        unsafe {
+            self.device.destroy_buffer(self.raw, None);
+            self.device.free_memory(self.memory, None);
         }
     }
 }
