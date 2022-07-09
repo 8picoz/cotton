@@ -103,7 +103,10 @@ impl Pipelines<'_> {
                 .build(),
         ];
 
-        let acceleration_structures = TriangleAccelerationStructure::new();
+        let acceleration_structures = TriangleAccelerationStructure::new(
+            backends,
+            
+        );
 
         let (rt_pipeline_properties, rt_pipeline)
             = Self::create_raytracing_structure(&backends.instance, backends.physical_device, &backends.device);

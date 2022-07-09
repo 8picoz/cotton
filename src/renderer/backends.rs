@@ -298,7 +298,7 @@ impl Backends<'_> {
         unsafe {
             let extension_properties = self
                 .instance
-                .enumerate_device_extension_properties(pdevice.raw)?;
+                .enumerate_device_extension_properties(pdevice.raw).unwrap();
             debug!("Extension properties:\n{:#?}", &extension_properties);
 
             let supported_extensions: HashSet<String> = extension_properties

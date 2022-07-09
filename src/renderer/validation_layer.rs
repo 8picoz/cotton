@@ -19,7 +19,7 @@ impl ValidationLayer {
     }
 
     pub fn require_validation_layer_extension_names_cstring() -> Vec<CString> {
-        REQUIRED_LAYERS.map(|item| CString::new(item)).into_iter().collect()
+        REQUIRED_LAYERS.map(|item| CString::new(item).unwrap()).into_iter().collect()
     }
 
     pub fn require_validation_layer_extension_names_c_char() -> Vec<*const c_char> {
