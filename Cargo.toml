@@ -5,7 +5,7 @@ edition = "2021"
 
 [workspace]
 members = [
-    "shaders/classical_raytracer",
+    "shaders/classical_raytracer_shader",
 ]
 
 [dependencies]
@@ -16,6 +16,7 @@ log = "0.4.14"
 tobj = "3.2.0"
 winit = "0.26.1"
 anyhow = "1.0.57"
+classical_raytracer_shader = { path = "./shaders/classical_raytracer_shader" }
 
 [build-dependencies]
 spirv-builder = { git = "https://github.com/EmbarkStudios/rust-gpu" }

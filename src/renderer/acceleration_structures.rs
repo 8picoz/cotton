@@ -3,6 +3,7 @@ use ash::extensions::khr::AccelerationStructure;
 use ash::vk::{AabbPositionsKHR, AccelerationStructureBuildGeometryInfoKHR, AccelerationStructureBuildRangeInfoKHR, AccelerationStructureBuildTypeKHR, AccelerationStructureCreateInfoKHR, AccelerationStructureGeometryAabbsDataKHR, AccelerationStructureGeometryDataKHR, AccelerationStructureGeometryKHR, AccelerationStructureTypeKHR, Buffer, BufferUsageFlags, BuildAccelerationStructureFlagsKHR, BuildAccelerationStructureModeKHR, DeviceOrHostAddressConstKHR, GeometryFlagsKHR, GeometryTypeKHR, MemoryPropertyFlags, PhysicalDeviceMemoryProperties};
 use crate::buffer::Buffers;
 use crate::renderer::backends::Backends;
+use classical_raytracer::Vertex;
 
 pub struct AccelerationStructures {
     pub acceleration_structure: AccelerationStructure,
@@ -14,6 +15,12 @@ impl AccelerationStructures {
         let acceleration_structure
             = AccelerationStructure::new(&backends.instance, &backends.device);
 
+        let bottom_acceleration = Self::create_bottom_acceleration(
+            &backends.device,
+            device_memory_properties,
+            &acceleration_structure
+        );
+
         Self {
             acceleration_structure,
         }
@@ -24,27 +31,10 @@ impl AccelerationStructures {
         device_memory_properties: PhysicalDeviceMemoryProperties,
         acceleration_structure: &AccelerationStructure
     ) ->  {
-        //bottom-level
-        let aabb = AabbPositionsKHR::builder()
-            .min_x(-1.0)
-            .max_x(1.0)
-            .min_y(-1.0)
-            .min_z(-1.0)
-            .max_z(1.0)
-            .build();
+        const VERTICES: [Vertex; 3] = [
 
-        let mut aabb_buffers = Buffers::new(
-            std::mem::size_of::<AabbPositionsKHR>() as u64,
-            BufferUsageFlags::SHADER_DEVICE_ADDRESS
-                | BufferUsageFlags::ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_KHR,
-            MemoryPropertyFlags::DEVICE_LOCAL
-                | MemoryPropertyFlags::HOST_VISIBLE
-                | MemoryPropertyFlags::HOST_COHERENT,
-            device,
-            device_memory_properties,
-        );
+        ];
 
-        aabb_buffers.store(&[aabb]);
 
         let geometry = AccelerationStructureGeometryKHR::builder()
             //Dataのタイプ
@@ -112,5 +102,14 @@ impl AccelerationStructures {
         };
 
         build_info.dst_acceleration_structure = bottom_as;
+
+        let scratch_buffer = Buffers::new(
+            size_info.build_scratch_size,
+            BufferUsageFlags::SHADER_DEVICE_ADDRESS
+                | BufferUsageFlags::STORAGE_BUFFER,
+            MemoryPropertyFlags::DEVICE_LOCAL,
+            device,
+            device_memory_properties
+        );
     }
 }
