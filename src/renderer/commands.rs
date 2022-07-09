@@ -2,7 +2,7 @@ use ash::Device;
 use ash::vk::{CommandBuffer, CommandBufferAllocateInfo, CommandBufferLevel, CommandPool, CommandPoolCreateFlags, CommandPoolCreateInfo};
 use crate::constants::MAX_FRAMES_IN_FLIGHT;
 
-struct Commands<'a> {
+pub struct Commands<'a> {
     device: &'a Device,
     pub command_pool: CommandPool,
     pub command_buffers: Vec<CommandBuffer>,

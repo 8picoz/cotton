@@ -8,6 +8,7 @@ use ash::extensions::khr::{AccelerationStructure, DeferredHostOperations, RayTra
 use ash::vk::{CommandPool, CommandPoolCreateFlags, CommandPoolCreateInfo, DebugUtilsMessengerCreateInfoEXT, DeviceCreateInfo, DeviceQueueCreateInfo, ExtScalarBlockLayoutFn, KhrGetMemoryRequirements2Fn, KhrSpirv14Fn, PhysicalDevice, PhysicalDeviceAccelerationStructureFeaturesKHR, PhysicalDeviceBufferDeviceAddressFeatures, PhysicalDeviceDescriptorIndexingFeaturesEXT, PhysicalDeviceFeatures, PhysicalDeviceFeatures2, PhysicalDeviceImagelessFramebufferFeaturesKHR, PhysicalDeviceMemoryProperties, PhysicalDeviceProperties2, PhysicalDeviceRayTracingPipelineFeaturesKHR, PhysicalDeviceRayTracingPipelinePropertiesKHR, PhysicalDeviceScalarBlockLayoutFeaturesEXT, PhysicalDeviceShaderFloat16Int8Features, PhysicalDeviceVulkan12Features, PhysicalDeviceVulkanMemoryModelFeatures, PhysicalDeviceVulkanMemoryModelFeaturesKHR, Queue};
 use log::{debug, info};
 use tobj::LoadError::NormalParseError;
+use crate::renderer::commands::Commands;
 use crate::renderer::queue_family_indices::QueueFamilyIndices;
 use crate::renderer::surfaces::Surfaces;
 use crate::renderer::validation_layer::{REQUIRED_LAYERS, ValidationLayer};
@@ -54,7 +55,7 @@ impl Backends {
             instance.get_physical_device_memory_properties(physical_device)
         };
 
-        let command_pool = Self::create_command_pool(
+        let commands = Commands::new(
             &device,
             queue_family_indices.graphics_family.unwrap()
         );
@@ -64,6 +65,7 @@ impl Backends {
             instance,
             physical_device,
             device,
+            commands,
             surfaces: Some(surfaces),
             device_memory_properties,
             queue_family_indices,
