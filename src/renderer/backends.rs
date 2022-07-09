@@ -14,19 +14,19 @@ use crate::renderer::surfaces::Surfaces;
 use crate::renderer::validation_layer::{REQUIRED_LAYERS, ValidationLayer};
 use crate::window_handlers::WindowHandlers;
 
-pub struct Backends {
+pub struct Backends<'a> {
     pub entry: Entry,
     pub instance: Instance,
     pub physical_device: PhysicalDevice,
     pub device: Device,
     pub surfaces: Option<Surfaces>,
-    pub commands: Commands,
+    pub commands: Commands<'a>,
 
     pub(crate) device_memory_properties: PhysicalDeviceMemoryProperties,
     queue_family_indices: QueueFamilyIndices,
 }
 
-impl Backends {
+impl Backends<'_> {
     //with surface
     pub fn new(window_handlers: &WindowHandlers , enable_validation_layer: bool) -> anyhow::Result<Self> {
         let entry = unsafe { Entry::load()? };
@@ -296,9 +296,8 @@ impl Backends {
 
     pub fn display_support_extension(&self) {
         unsafe {
-            let extension_properties = self.physical_device
+            let extension_properties = self
                 .instance
-                .raw
                 .enumerate_device_extension_properties(pdevice.raw)?;
             debug!("Extension properties:\n{:#?}", &extension_properties);
 
@@ -322,7 +321,7 @@ impl Backends {
     }
 }
 
-impl Drop for Backends {
+impl Drop for Backends<'_> {
     fn drop(&mut self) {
         unsafe {
             self.device.destroy_device(None);
