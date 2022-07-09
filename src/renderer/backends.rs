@@ -5,7 +5,7 @@ use ash::vk;
 use ash::{Device, Entry, Instance};
 use ash::extensions::ext::DebugUtils;
 use ash::extensions::khr::{AccelerationStructure, DeferredHostOperations, RayTracingPipeline, Surface, Swapchain, Win32Surface};
-use ash::vk::{DebugUtilsMessengerCreateInfoEXT, DeviceCreateInfo, DeviceQueueCreateInfo, ExtScalarBlockLayoutFn, KhrGetMemoryRequirements2Fn, KhrSpirv14Fn, PhysicalDevice, PhysicalDeviceAccelerationStructureFeaturesKHR, PhysicalDeviceBufferDeviceAddressFeatures, PhysicalDeviceDescriptorIndexingFeaturesEXT, PhysicalDeviceFeatures, PhysicalDeviceFeatures2, PhysicalDeviceImagelessFramebufferFeaturesKHR, PhysicalDeviceMemoryProperties, PhysicalDeviceProperties2, PhysicalDeviceRayTracingPipelineFeaturesKHR, PhysicalDeviceRayTracingPipelinePropertiesKHR, PhysicalDeviceScalarBlockLayoutFeaturesEXT, PhysicalDeviceShaderFloat16Int8Features, PhysicalDeviceVulkan12Features, PhysicalDeviceVulkanMemoryModelFeatures, PhysicalDeviceVulkanMemoryModelFeaturesKHR, Queue};
+use ash::vk::{CommandPool, CommandPoolCreateFlags, CommandPoolCreateInfo, DebugUtilsMessengerCreateInfoEXT, DeviceCreateInfo, DeviceQueueCreateInfo, ExtScalarBlockLayoutFn, KhrGetMemoryRequirements2Fn, KhrSpirv14Fn, PhysicalDevice, PhysicalDeviceAccelerationStructureFeaturesKHR, PhysicalDeviceBufferDeviceAddressFeatures, PhysicalDeviceDescriptorIndexingFeaturesEXT, PhysicalDeviceFeatures, PhysicalDeviceFeatures2, PhysicalDeviceImagelessFramebufferFeaturesKHR, PhysicalDeviceMemoryProperties, PhysicalDeviceProperties2, PhysicalDeviceRayTracingPipelineFeaturesKHR, PhysicalDeviceRayTracingPipelinePropertiesKHR, PhysicalDeviceScalarBlockLayoutFeaturesEXT, PhysicalDeviceShaderFloat16Int8Features, PhysicalDeviceVulkan12Features, PhysicalDeviceVulkanMemoryModelFeatures, PhysicalDeviceVulkanMemoryModelFeaturesKHR, Queue};
 use log::{debug, info};
 use tobj::LoadError::NormalParseError;
 use crate::renderer::queue_family_indices::QueueFamilyIndices;
@@ -19,6 +19,7 @@ pub struct Backends {
     pub physical_device: PhysicalDevice,
     pub device: Device,
     pub surfaces: Option<Surfaces>,
+    pub command_pool: CommandPool,
 
     pub(crate) device_memory_properties: PhysicalDeviceMemoryProperties,
     queue_family_indices: QueueFamilyIndices,
@@ -53,12 +54,18 @@ impl Backends {
             instance.get_physical_device_memory_properties(physical_device)
         };
 
+        let command_pool = Self::create_command_pool(
+            &device,
+            queue_family_indices.graphics_family.unwrap()
+        );
+
         Ok(Self {
             entry,
             instance,
             physical_device,
             device,
             surfaces: Some(surfaces),
+            command_pool,
             device_memory_properties,
             queue_family_indices,
         })
@@ -266,6 +273,17 @@ impl Backends {
         }
     }
 
+    fn create_command_pool(device: &Device, graphics_family_index: u32) -> CommandPool {
+        let command_pool_create_info = CommandPoolCreateInfo::builder()
+            .queue_family_index(graphics_family_index)
+            .flags(CommandPoolCreateFlags::RESET_COMMAND_BUFFER)
+            .build();
+
+        unsafe {
+            device.create_command_pool(&command_pool_create_info, None).unwrap()
+        }
+    }
+
     pub fn create_graphics_queue(
         &self,
         queue_index: u32,
@@ -312,7 +330,6 @@ impl Backends {
             }
         }
     }
-
 }
 
 impl Drop for Backends {
