@@ -170,10 +170,12 @@ impl Backends {
         ];
 
         let mut scalar_block = PhysicalDeviceScalarBlockLayoutFeaturesEXT::default();
+        //ディスクリプタ配列を扱えるように
         let mut descriptor_indexing = PhysicalDeviceDescriptorIndexingFeaturesEXT::default();
         let mut imageless_framebuffer = PhysicalDeviceImagelessFramebufferFeaturesKHR::default();
         let mut shader_float16_int8 = PhysicalDeviceShaderFloat16Int8Features::default();
         let mut vulkan_memory_model = PhysicalDeviceVulkanMemoryModelFeaturesKHR::default();
+        //バッファにおいてデバイスアドレスを使用可能に
         let mut get_buffer_device_address_features = PhysicalDeviceBufferDeviceAddressFeatures::default();
 
         //Raytracing
@@ -203,7 +205,6 @@ impl Backends {
         debug!("{:#?}", &ray_tracing_pipeline_features);
 
         /*
-
         //PhysicalDeviceVulkan12Featuresは上部のPhysicalDeviceFeatures2のpNextに繋げばその機能がサポートされてるかの確認として使うことが出来るし、
         //DeviceCreateInfoに繋げばその機能の有効化にも使える
         let mut features12 = PhysicalDeviceVulkan12Features::builder()
@@ -222,7 +223,6 @@ impl Backends {
         let mut raytracing_pipeline = PhysicalDeviceRayTracingPipelineFeaturesKHR::builder()
             .ray_tracing_pipeline(true)
             .build();
-
         */
 
         let mut extension_names = vec![
