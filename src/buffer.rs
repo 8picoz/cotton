@@ -3,19 +3,19 @@ use ash::util::Align;
 use ash::vk::{Buffer, BufferCreateInfo, BufferDeviceAddressInfo, BufferUsageFlags, DeviceMemory, DeviceSize, MemoryAllocateFlags, MemoryAllocateFlagsInfo, MemoryAllocateInfo, MemoryMapFlags, MemoryPropertyFlags, PhysicalDeviceMemoryProperties, SharingMode};
 
 pub struct Buffers<'a> {
-    pub device: &'a Device,
-    pub raw: Buffer,
+    device: &'a Device,
+    pub buffer: Buffer,
     pub size: DeviceSize,
     pub memory: DeviceMemory,
 }
 
 impl<'a> Buffers<'a> {
     pub fn new(
+        device: &'a Device,
+        device_memory_properties: PhysicalDeviceMemoryProperties,
         size: DeviceSize,
         usage: BufferUsageFlags,
         memory_properties: MemoryPropertyFlags,
-        device: &'a Device,
-        device_memory_properties: PhysicalDeviceMemoryProperties,
     ) -> Self {
         let buffer_info = BufferCreateInfo::builder()
             .size(size)
@@ -23,13 +23,13 @@ impl<'a> Buffers<'a> {
             .sharing_mode(SharingMode::EXCLUSIVE)
             .build();
 
-        let raw = unsafe {
+        let buffer = unsafe {
             device.create_buffer(&buffer_info, None).unwrap()
         };
 
         //メモリサイズやアライメントなどの確保に必要な情報を持つ構造体
         let memory_requirements = unsafe {
-            device.get_buffer_memory_requirements(raw)
+            device.get_buffer_memory_requirements(buffer)
         };
 
         let mut memory_type_index = 0;
@@ -61,17 +61,18 @@ impl<'a> Buffers<'a> {
             .memory_type_index(memory_type_index)
             .build();
 
+        //memoryはdeviceがネイティブに扱える管理単位
         let memory = unsafe {
             device.allocate_memory(&allocate_info, None).unwrap()
         };
 
         unsafe {
-            device.bind_buffer_memory(raw, memory, 0).unwrap()
+            device.bind_buffer_memory(buffer, memory, 0).unwrap()
         }
 
         Self {
             device,
-            raw,
+            buffer,
             size,
             memory,
         }
@@ -79,7 +80,7 @@ impl<'a> Buffers<'a> {
 
     pub fn get_buffer_address(&self) -> u64 {
         let buffer_device_address_info = BufferDeviceAddressInfo::builder()
-            .buffer(self.raw)
+            .buffer(self.buffer)
             .build();
 
         unsafe {
@@ -91,7 +92,7 @@ impl<'a> Buffers<'a> {
     pub fn store<T: Copy>(&mut self, data: &[T]) {
         let size = (std::mem::size_of::<T>() * data.len()) as u64;
         //すでにBuffersが確保している領域よりも大きかったら弾く
-        assert!(self.size >= size)
+        assert!(self.size >= size);
         let mapped_ptr = self.map(size);
         let mut mapped_slice = unsafe {
             Align::new(mapped_ptr, std::mem::align_of::<T>() as u64, size)
@@ -118,7 +119,7 @@ impl<'a> Buffers<'a> {
 impl Drop for Buffers<'_> {
     fn drop(&mut self) {
         unsafe {
-            self.device.destroy_buffer(self.raw, None);
+            self.device.destroy_buffer(self.buffer, None);
             self.device.free_memory(self.memory, None);
         }
     }
