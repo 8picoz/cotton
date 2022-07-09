@@ -1,6 +1,8 @@
 pub const DEFAULT_WINDOW_WIDTH: u32 = 1920;
 pub const DEFAULT_WINDOW_HEIGHT: u32 = 1080;
 
+pub const MAX_FRAMES_IN_FLIGHT: u32 = 1;
+
 pub const APPLICATION_NAME: &str = "cotton";
 
 pub const VERTEX_SHADER_ENTRY_NAME: &str = "main_vertex";

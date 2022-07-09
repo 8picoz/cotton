@@ -19,7 +19,7 @@ pub struct Backends {
     pub physical_device: PhysicalDevice,
     pub device: Device,
     pub surfaces: Option<Surfaces>,
-    pub command_pool: CommandPool,
+    pub commands: Commands,
 
     pub(crate) device_memory_properties: PhysicalDeviceMemoryProperties,
     queue_family_indices: QueueFamilyIndices,
@@ -65,7 +65,6 @@ impl Backends {
             physical_device,
             device,
             surfaces: Some(surfaces),
-            command_pool,
             device_memory_properties,
             queue_family_indices,
         })
@@ -270,17 +269,6 @@ impl Backends {
         unsafe {
             instance.create_device(physical_device, &device_create_info, None)
                 .expect("Failed to create logical Device")
-        }
-    }
-
-    fn create_command_pool(device: &Device, graphics_family_index: u32) -> CommandPool {
-        let command_pool_create_info = CommandPoolCreateInfo::builder()
-            .queue_family_index(graphics_family_index)
-            .flags(CommandPoolCreateFlags::RESET_COMMAND_BUFFER)
-            .build();
-
-        unsafe {
-            device.create_command_pool(&command_pool_create_info, None).unwrap()
         }
     }
 
