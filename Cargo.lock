@@ -261,6 +261,7 @@ dependencies = [
  "ash-window",
  "classical_raytracer_shader",
  "env_logger",
+ "glam",
  "log",
  "spirv-builder",
  "tobj",

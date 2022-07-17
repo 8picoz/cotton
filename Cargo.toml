@@ -16,7 +16,7 @@ log = "0.4.14"
 tobj = "3.2.0"
 winit = "0.26.1"
 anyhow = "1.0.57"
-glam = { version = "0.21", default-features = false, features = ["libm"] }
+glam = "0.20.5"
 classical_raytracer_shader = { path = "./shaders/classical_raytracer_shader" }
 
 [build-dependencies]
