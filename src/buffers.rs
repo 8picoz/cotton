@@ -35,7 +35,7 @@ impl<'a> Buffers<'a> {
         let mut memory_type_index = 0;
 
         for i in 0..device_memory_properties.memory_type_count {
-            if (type_bits & 1) == 1 {
+            if (memory_requirements.memory_type_bits & 1) == 1 {
                 //PhysicalDeviceMemoryPropertiesの中からmemory_propertiesと同一のものを探す
                 if (device_memory_properties.memory_types[i as usize].property_flags & memory_properties) == memory_properties {
                     memory_type_index = i;
