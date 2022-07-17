@@ -1,26 +1,26 @@
 use ash::Device;
 use ash::extensions::khr::AccelerationStructure;
 use ash::vk::{AabbPositionsKHR, AccelerationStructureBuildGeometryInfoKHR, AccelerationStructureBuildRangeInfoKHR, AccelerationStructureBuildTypeKHR, AccelerationStructureCreateInfoKHR, AccelerationStructureGeometryAabbsDataKHR, AccelerationStructureGeometryDataKHR, AccelerationStructureGeometryKHR, AccelerationStructureGeometryTrianglesDataKHR, AccelerationStructureKHR, AccelerationStructureTypeKHR, Buffer, BufferUsageFlags, BuildAccelerationStructureFlagsKHR, BuildAccelerationStructureModeKHR, CommandBuffer, CommandBufferBeginInfo, CommandBufferUsageFlags, CommandPool, DeviceOrHostAddressConstKHR, DeviceOrHostAddressKHR, DeviceSize, Fence, GeometryFlagsKHR, GeometryTypeKHR, IndexType, MemoryPropertyFlags, PhysicalDeviceMemoryProperties, Queue, SubmitInfo};
-use crate::buffer::Buffers;
+use glam::{const_vec3a, vec3a, Vec3A};
+use crate::buffers::Buffers;
 use crate::renderer::backends::Backends;
-use classical_raytracer::Vertex;
 use classical_raytracer_shader::vertex::Vertex;
 use crate::renderer::commands::Commands;
 use crate::renderer::mesh_buffer::MeshBuffer;
 
 pub struct TriangleAccelerationStructure<'a> {
-    device: &'a device,
+    device: &'a Device,
     pub acceleration_structure: AccelerationStructure,
     pub bottom_acceleration_structure: AccelerationStructureKHR,
     pub top_acceleration_structure: AccelerationStructureKHR,
     pub mesh_buffer: MeshBuffer<'a>,
 }
 
-impl TriangleAccelerationStructure<'_> {
+impl<'a> TriangleAccelerationStructure<'a> {
     pub fn new(
-        backends: &Backends,
+        backends: &'a Backends,
         device_memory_properties: PhysicalDeviceMemoryProperties,
-        commands: Commands,
+        commands: &Commands,
         graphics_queue: Queue,
     ) -> Self {
         let acceleration_structure
@@ -50,9 +50,7 @@ impl TriangleAccelerationStructure<'_> {
         //TODO: このbottom asをモデルごとに作成するようにしてtop asと紐づける
         let (
             bottom_acceleration_structure,
-            bottom_accel_buffer,
-            vertex_buffer,
-            index_buffer
+            bottom_accel_buffer
         ) = Self::create_bottom_acceleration(
             &backends.device,
             device_memory_properties,
@@ -63,21 +61,22 @@ impl TriangleAccelerationStructure<'_> {
         );
 
         Self {
-            device,
+            device: &backends.device,
             acceleration_structure,
             bottom_acceleration_structure,
+            top_acceleration_structure: Default::default(),
             mesh_buffer,
         }
     }
 
-    pub fn create_bottom_acceleration<'a>(
+    pub fn create_bottom_acceleration(
         device: &'a Device,
         device_memory_properties: PhysicalDeviceMemoryProperties,
-        acceleration_structure: &'a AccelerationStructure,
+        acceleration_structure: &AccelerationStructure,
         mesh_buffer: &MeshBuffer,
-        commands: Commands,
+        commands: &Commands,
         graphics_queue: Queue,
-    ) -> (AccelerationStructureKHR, Buffers<'a>, Buffers<'a>, Buffers<'a>) {
+    ) -> (AccelerationStructureKHR, Buffers<'a>) {
         let geometry = AccelerationStructureGeometryKHR::builder()
             //Dataのタイプ
             .geometry_type(GeometryTypeKHR::TRIANGLES)
@@ -86,14 +85,14 @@ impl TriangleAccelerationStructure<'_> {
                 triangles: AccelerationStructureGeometryTrianglesDataKHR::builder()
                     .vertex_data(DeviceOrHostAddressConstKHR {
                         device_address: unsafe {
-                            vertex_buffer.get_buffer_address()
+                            mesh_buffer.vertex_buffer.get_buffer_address()
                         },
                     })
                     .max_vertex(mesh_buffer.max_vertex)
                     .vertex_stride(mesh_buffer.vertex_stride)
                     .index_data(DeviceOrHostAddressConstKHR {
                         device_address: unsafe {
-                            index_buffer.get_buffer_address()
+                            mesh_buffer.index_buffer.get_buffer_address()
                         }
                     })
                     .index_type(IndexType::UINT32)
@@ -104,7 +103,17 @@ impl TriangleAccelerationStructure<'_> {
             .build();
 
         let build_range_info = AccelerationStructureBuildRangeInfoKHR::builder()
-            .primitive_count(indices.len() as u32 / 3)
+            .primitive_count(mesh_buffer.indices_count / 3)
+            .build();
+
+        let geometries = [geometry];
+
+        let build_info = AccelerationStructureBuildGeometryInfoKHR::builder()
+            //ASのビルドよりもトレースの処理速度を優先する
+            .flags(BuildAccelerationStructureFlagsKHR::PREFER_FAST_TRACE)
+            .geometries(&geometries)
+            .mode(BuildAccelerationStructureModeKHR::BUILD)
+            .ty(AccelerationStructureTypeKHR::BOTTOM_LEVEL)
             .build();
 
         let memory_requirements = unsafe {
@@ -112,11 +121,9 @@ impl TriangleAccelerationStructure<'_> {
                 AccelerationStructureBuildTypeKHR::DEVICE,
                 &build_info,
                 //geometriesに対応するように配列を作成する
-                &[indices.len() as u32 / 3]
+                &[mesh_buffer.indices_count / 3]
             )
         };
-
-        let geometries = [geometry];
 
         let scratch_buffer = Buffers::new(
             device,
@@ -205,7 +212,7 @@ impl TriangleAccelerationStructure<'_> {
             device.free_memory(scratch_buffer.memory, None);
         }
 
-        (bottom_accel, bottom_accel_buffer, vertex_buffer, index_buffer)
+        (bottom_accel, bottom_accel_buffer)
     }
 }
 

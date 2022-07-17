@@ -14,19 +14,19 @@ use crate::renderer::surfaces::Surfaces;
 use crate::renderer::validation_layer::{REQUIRED_LAYERS, ValidationLayer};
 use crate::window_handlers::WindowHandlers;
 
-pub struct Backends<'a> {
+pub struct Backends {
     pub entry: Entry,
     pub instance: Instance,
     pub physical_device: PhysicalDevice,
     pub device: Device,
     pub surfaces: Option<Surfaces>,
-    pub commands: Commands<'a>,
+    pub commands: Commands,
 
     pub(crate) device_memory_properties: PhysicalDeviceMemoryProperties,
     queue_family_indices: QueueFamilyIndices,
 }
 
-impl Backends<'_> {
+impl Backends {
     //with surface
     pub fn new(window_handlers: &WindowHandlers , enable_validation_layer: bool) -> anyhow::Result<Self> {
         let entry = unsafe { Entry::load()? };
@@ -148,7 +148,7 @@ impl Backends<'_> {
             .expect("Doesn't match physical device suitable");
 
         let props = unsafe {
-            instance.get_physical_device_properties((physical_device))
+            instance.get_physical_device_properties(physical_device)
         };
 
         info!("Selected physical device: {:?}", unsafe {
@@ -259,10 +259,9 @@ impl Backends<'_> {
             .enabled_extension_names(&extension_names)
             .queue_create_infos(&queue_create_info);
 
+        let mut validation_extension_names = ValidationLayer::require_validation_layer_extension_names_c_char();
         if enable_validation_layer {
-            let mut validation_extension_names = ValidationLayer::require_validation_layer_extension_names_c_char();
-
-            device_create_info
+            device_create_info = device_create_info
                 .enabled_layer_names(validation_extension_names.as_slice());
         }
 
@@ -298,21 +297,21 @@ impl Backends<'_> {
         unsafe {
             let extension_properties = self
                 .instance
-                .enumerate_device_extension_properties(pdevice.raw).unwrap();
+                .enumerate_device_extension_properties(self.physical_device).unwrap();
             debug!("Extension properties:\n{:#?}", &extension_properties);
 
             let supported_extensions: HashSet<String> = extension_properties
                 .iter()
                 .map(|ext| {
-                    std::ffi::CStr::from_ptr(ext.extension_name.as_ptr() as *const c_char)
+                    CStr::from_ptr(ext.extension_name.as_ptr() as *const c_char)
                         .to_string_lossy()
                         .as_ref()
                         .to_owned()
                 })
                 .collect();
 
-            for &ext in &device_extension_names {
-                let ext = std::ffi::CStr::from_ptr(ext).to_string_lossy();
+            for ext in extension_properties {
+                let ext = CStr::from_ptr(ext.extension_name.as_ptr()).to_string_lossy();
                 if !supported_extensions.contains(ext.as_ref()) {
                     panic!("Device extension not supported: {}", ext);
                 }
@@ -321,7 +320,7 @@ impl Backends<'_> {
     }
 }
 
-impl Drop for Backends<'_> {
+impl Drop for Backends {
     fn drop(&mut self) {
         unsafe {
             self.device.destroy_device(None);

@@ -1,19 +1,20 @@
 use ash::Device;
 use ash::vk::{BufferUsageFlags, DeviceSize, MemoryPropertyFlags, PhysicalDeviceMemoryProperties};
 use classical_raytracer_shader::vertex::Vertex;
-use crate::buffer::Buffers;
+use crate::buffers::Buffers;
 
 pub struct MeshBuffer<'a> {
     device: &'a Device,
     pub vertex_stride: u64,
     pub max_vertex: u32,
     pub vertex_buffer: Buffers<'a>,
+    pub indices_count: u32,
     pub index_buffer: Buffers<'a>,
 }
 
-impl MeshBuffer<'_> {
+impl<'a> MeshBuffer<'a> {
     pub fn new(
-        device: &Device,
+        device: &'a Device,
         vertices: Vec<Vertex>,
         indices: Vec<u32>,
         device_memory_properties: PhysicalDeviceMemoryProperties,
@@ -57,6 +58,7 @@ impl MeshBuffer<'_> {
             vertex_stride,
             max_vertex,
             vertex_buffer,
+            indices_count: indices.len() as u32,
             index_buffer,
         }
     }

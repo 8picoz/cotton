@@ -1,7 +1,7 @@
 use std::ffi::{CStr, CString};
 use ash::{Device, Instance, vk};
 use ash::extensions::khr::{AccelerationStructure, RayTracingPipeline};
-use ash::vk::{AccelerationStructureNV, DeferredOperationKHR, DescriptorSetLayoutBinding, DescriptorSetLayoutCreateInfo, Extent2D, PhysicalDevice, PhysicalDeviceProperties2, PhysicalDeviceRayTracingPipelinePropertiesKHR, Pipeline, PipelineCache, PipelineLayout, PipelineLayoutCreateInfo, PipelineShaderStageCreateInfo, PushConstantRange, RayTracingPipelineCreateInfoKHR, RayTracingShaderGroupCreateInfoKHR, RayTracingShaderGroupTypeKHR, SHADER_UNUSED_KHR, ShaderModule, ShaderStageFlags};
+use ash::vk::{AccelerationStructureNV, DeferredOperationKHR, DescriptorSetLayoutBinding, DescriptorSetLayoutCreateInfo, Extent2D, PhysicalDevice, PhysicalDeviceProperties2, PhysicalDeviceRayTracingPipelinePropertiesKHR, Pipeline, PipelineCache, PipelineLayout, PipelineLayoutCreateInfo, PipelineShaderStageCreateInfo, PushConstantRange, Queue, RayTracingPipelineCreateInfoKHR, RayTracingShaderGroupCreateInfoKHR, RayTracingShaderGroupTypeKHR, SHADER_UNUSED_KHR, ShaderModule, ShaderStageFlags};
 use crate::constants::{FRAGMENT_SHADER_ENTRY_NAME, MISS_SHADER_ENTRY_NAME, RAY_GENERATION_SHADER_ENTRY_NAME, SPHERE_CLOSEST_HIT_SHADER_ENTRY_NAME, SPHERE_INTERSECTION_SHADER_ENTRY_NAME, TRIANGLE_ANY_HIT_SHADER_ENTRY_NAME, TRIANGLE_CLOSEST_HIT_SHADER_ENTRY_NAME, VERTEX_SHADER_ENTRY_NAME};
 use crate::renderer::acceleration_structures::TriangleAccelerationStructure;
 use crate::renderer::backends::Backends;
@@ -16,9 +16,54 @@ pub struct Pipelines<'a> {
     pub(crate) ray_tracing_pipeline_properties: PhysicalDeviceRayTracingPipelinePropertiesKHR,
 }
 
-impl Pipelines<'_> {
+impl<'a> Pipelines<'a> {
     //with raytracing
-    pub fn new(backends: &Backends, shader_module: ShaderModule, swapchain_extent: Extent2D, render_passes: &RenderPasses) -> Self {
+    pub fn new(
+        backends: &'a Backends,
+        shader_module: ShaderModule,
+        swapchain_extent: Extent2D,
+        render_passes: &RenderPasses,
+        graphics_queue: Queue,
+    ) -> Self {
+
+        //Descriptor Binding
+
+        let bindings = [
+            DescriptorSetLayoutBinding::builder()
+                .descriptor_count(1)
+                .descriptor_type(vk::DescriptorType::ACCELERATION_STRUCTURE_KHR)
+                .stage_flags(vk::ShaderStageFlags::RAYGEN_KHR)
+                .binding(0)
+                .build(),
+            DescriptorSetLayoutBinding::builder()
+                .descriptor_count(1)
+                .descriptor_type(vk::DescriptorType::STORAGE_IMAGE)
+                .stage_flags(vk::ShaderStageFlags::RAYGEN_KHR)
+                .binding(1)
+                .build(),
+            DescriptorSetLayoutBinding::builder()
+                .descriptor_count(1)
+                .descriptor_type(vk::DescriptorType::STORAGE_BUFFER)
+                .stage_flags(vk::ShaderStageFlags::RAYGEN_KHR)
+                .binding(2)
+                .build(),
+            DescriptorSetLayoutBinding::builder()
+                .descriptor_count(1)
+                .descriptor_type(vk::DescriptorType::STORAGE_BUFFER)
+                .stage_flags(vk::ShaderStageFlags::CLOSEST_HIT_KHR)
+                .binding(3)
+                .build(),
+            DescriptorSetLayoutBinding::builder()
+                .descriptor_count(1)
+                .descriptor_type(vk::DescriptorType::STORAGE_BUFFER)
+                .stage_flags(vk::ShaderStageFlags::CLOSEST_HIT_KHR)
+                .binding(4)
+                .build(),
+        ];
+
+        let pipeline_layout = Self::create_pipeline_layout(&backends.device, &bindings);
+
+        //stage
 
         let ray_generation_stage_info = PipelineShaderStageCreateInfo::builder()
             .stage(ShaderStageFlags::RAYGEN_KHR)
@@ -104,8 +149,10 @@ impl Pipelines<'_> {
         ];
 
         let acceleration_structures = TriangleAccelerationStructure::new(
-            backends,
-
+            &backends,
+            backends.device_memory_properties,
+            &backends.commands,
+            graphics_queue,
         );
 
         let (rt_pipeline_properties, rt_pipeline)

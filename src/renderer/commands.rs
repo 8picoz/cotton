@@ -2,20 +2,18 @@ use ash::Device;
 use ash::vk::{CommandBuffer, CommandBufferAllocateInfo, CommandBufferLevel, CommandPool, CommandPoolCreateFlags, CommandPoolCreateInfo};
 use crate::constants::MAX_FRAMES_IN_FLIGHT;
 
-pub struct Commands<'a> {
-    device: &'a Device,
+pub struct Commands {
     pub command_pool: CommandPool,
     pub command_buffers: Vec<CommandBuffer>,
 }
 
-impl<'a> Commands<'a> {
-    pub fn new(device: &'a Device, queue_family_index: u32) -> Self {
+impl Commands {
+    pub fn new(device: &Device, queue_family_index: u32) -> Self {
         let command_pool = Self::create_command_pool(device, queue_family_index);
 
         let command_buffers = Self::create_command_buffers(device, command_pool, MAX_FRAMES_IN_FLIGHT);
 
         Self {
-            device,
             command_pool,
             command_buffers,
         }
@@ -42,5 +40,11 @@ impl<'a> Commands<'a> {
         unsafe {
             device.allocate_command_buffers(&command_buffer_alloc_info).unwrap()
         }
+    }
+}
+
+impl Drop for Commands {
+    fn drop(&mut self) {
+        //todo!()
     }
 }
