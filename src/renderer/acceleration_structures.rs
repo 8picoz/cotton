@@ -4,7 +4,7 @@ use ash::vk::{AabbPositionsKHR, AccelerationStructureBuildGeometryInfoKHR, Accel
 use glam::{const_vec3a, vec3a, Vec3A};
 use crate::buffers::Buffers;
 use crate::renderer::backends::Backends;
-use classical_raytracer_shader::vertex::Vertex;
+use classical_raytracer_shader::Vertex;
 use crate::renderer::commands::Commands;
 use crate::renderer::mesh_buffer::MeshBuffer;
 

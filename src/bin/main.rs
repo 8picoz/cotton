@@ -1,5 +1,5 @@
 use std::env;
-
+use log::debug;
 
 
 use cotton::constants::{DEFAULT_WINDOW_HEIGHT, DEFAULT_WINDOW_WIDTH};
@@ -28,7 +28,7 @@ fn to_window() {
         cotton::renderer::backends::Backends::new(&window_handlers, true)
             .expect("Failed to create backends");
 
-    backends.display_support_extension();
+    //backends.display_support_extension();
 
     let graphics_queue = backends.create_graphics_queue(0);
     let present_queue = backends.create_present_queue(0);
@@ -38,12 +38,13 @@ fn to_window() {
 
     let render_passes = RenderPasses::new(&backends, swapchains.format, swapchain_images.image_views.clone(), swapchains.extent);
 
-    let code = include_bytes!(env!("shader.spv"));
-    let shader_module = create_shader_module(&device, code);
+    //let code = include_bytes!(env!("shader.spv"));
+    //let code: [u8; 3]  = [0, 0, 0];
+    //let shader_module = create_shader_module(&backends.device, &code);
 
     let pipelines = Pipelines::new(
         &backends,
-        shader_module,
+        Default::default(),
         swapchains.extent,
         &render_passes,
         graphics_queue

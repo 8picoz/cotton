@@ -1,6 +1,6 @@
 use ash::Device;
 use ash::vk::{BufferUsageFlags, DeviceSize, MemoryPropertyFlags, PhysicalDeviceMemoryProperties};
-use classical_raytracer_shader::vertex::Vertex;
+use classical_raytracer_shader::Vertex;
 use crate::buffers::Buffers;
 
 pub struct MeshBuffer<'a> {
