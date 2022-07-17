@@ -1,7 +1,6 @@
 use std::env;
 use log::debug;
 
-
 use cotton::constants::{DEFAULT_WINDOW_HEIGHT, DEFAULT_WINDOW_WIDTH};
 use cotton::renderer::pipelines::Pipelines;
 
@@ -38,13 +37,12 @@ fn to_window() {
 
     let render_passes = RenderPasses::new(&backends, swapchains.format, swapchain_images.image_views.clone(), swapchains.extent);
 
-    //let code = include_bytes!(env!("shader.spv"));
-    //let code: [u8; 3]  = [0, 0, 0];
-    //let shader_module = create_shader_module(&backends.device, &code);
+    let code = include_bytes!(env!("classical_raytracer_shader.spv"));
+    let shader_module = create_shader_module(&backends.device, code);
 
     let pipelines = Pipelines::new(
         &backends,
-        Default::default(),
+        shader_module,
         swapchains.extent,
         &render_passes,
         graphics_queue

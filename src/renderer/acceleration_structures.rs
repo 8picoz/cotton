@@ -2,6 +2,7 @@ use ash::Device;
 use ash::extensions::khr::AccelerationStructure;
 use ash::vk::{AabbPositionsKHR, AccelerationStructureBuildGeometryInfoKHR, AccelerationStructureBuildRangeInfoKHR, AccelerationStructureBuildTypeKHR, AccelerationStructureCreateInfoKHR, AccelerationStructureGeometryAabbsDataKHR, AccelerationStructureGeometryDataKHR, AccelerationStructureGeometryKHR, AccelerationStructureGeometryTrianglesDataKHR, AccelerationStructureKHR, AccelerationStructureTypeKHR, Buffer, BufferUsageFlags, BuildAccelerationStructureFlagsKHR, BuildAccelerationStructureModeKHR, CommandBuffer, CommandBufferBeginInfo, CommandBufferUsageFlags, CommandPool, DeviceOrHostAddressConstKHR, DeviceOrHostAddressKHR, DeviceSize, Fence, GeometryFlagsKHR, GeometryTypeKHR, IndexType, MemoryPropertyFlags, PhysicalDeviceMemoryProperties, Queue, SubmitInfo};
 use glam::{const_vec3a, vec3a, Vec3A};
+use log::debug;
 use crate::buffers::Buffers;
 use crate::renderer::backends::Backends;
 use classical_raytracer_shader::Vertex;
@@ -218,6 +219,6 @@ impl<'a> TriangleAccelerationStructure<'a> {
 
 impl Drop for TriangleAccelerationStructure<'_> {
     fn drop(&mut self) {
-        todo!()
+        //todo!()
     }
 }

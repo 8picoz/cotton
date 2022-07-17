@@ -2,7 +2,8 @@ use std::ffi::{CStr, CString};
 use ash::{Device, Instance, vk};
 use ash::extensions::khr::{AccelerationStructure, RayTracingPipeline};
 use ash::vk::{AccelerationStructureNV, DeferredOperationKHR, DescriptorSetLayoutBinding, DescriptorSetLayoutCreateInfo, Extent2D, PhysicalDevice, PhysicalDeviceProperties2, PhysicalDeviceRayTracingPipelinePropertiesKHR, Pipeline, PipelineCache, PipelineLayout, PipelineLayoutCreateInfo, PipelineShaderStageCreateInfo, PushConstantRange, Queue, RayTracingPipelineCreateInfoKHR, RayTracingShaderGroupCreateInfoKHR, RayTracingShaderGroupTypeKHR, SHADER_UNUSED_KHR, ShaderModule, ShaderStageFlags};
-use crate::constants::{FRAGMENT_SHADER_ENTRY_NAME, MISS_SHADER_ENTRY_NAME, RAY_GENERATION_SHADER_ENTRY_NAME, SPHERE_CLOSEST_HIT_SHADER_ENTRY_NAME, SPHERE_INTERSECTION_SHADER_ENTRY_NAME, TRIANGLE_ANY_HIT_SHADER_ENTRY_NAME, TRIANGLE_CLOSEST_HIT_SHADER_ENTRY_NAME, VERTEX_SHADER_ENTRY_NAME};
+use log::debug;
+use crate::constants::{FRAGMENT_SHADER_ENTRY_NAME, MISS_SHADER_ENTRY_NAME, MISS_SHADER_ENTRY_NAME_BYTE, RAY_GENERATION_SHADER_ENTRY_NAME, RAY_GENERATION_SHADER_ENTRY_NAME_BYTE, SPHERE_CLOSEST_HIT_SHADER_ENTRY_NAME, SPHERE_CLOSEST_HIT_SHADER_ENTRY_NAME_BYTE, SPHERE_INTERSECTION_SHADER_ENTRY_NAME, SPHERE_INTERSECTION_SHADER_ENTRY_NAME_BYTE, TRIANGLE_ANY_HIT_SHADER_ENTRY_NAME, TRIANGLE_ANY_HIT_SHADER_ENTRY_NAME_BYTE, TRIANGLE_CLOSEST_HIT_SHADER_ENTRY_NAME, TRIANGLE_CLOSEST_HIT_SHADER_ENTRY_NAME_BYTE, VERTEX_SHADER_ENTRY_NAME};
 use crate::renderer::acceleration_structures::TriangleAccelerationStructure;
 use crate::renderer::backends::Backends;
 use crate::renderer::render_passes::RenderPasses;
@@ -65,50 +66,52 @@ impl<'a> Pipelines<'a> {
 
         //stage
 
-        let ray_generation_stage_info = PipelineShaderStageCreateInfo::builder()
-            .stage(ShaderStageFlags::RAYGEN_KHR)
-            .module(shader_module)
-            .name(CString::new(RAY_GENERATION_SHADER_ENTRY_NAME).unwrap().as_c_str())
-            .build();
+        let shader_stages = unsafe {
+            let ray_generation_stage_info = PipelineShaderStageCreateInfo::builder()
+                .stage(ShaderStageFlags::RAYGEN_KHR)
+                .module(shader_module)
+                .name(CStr::from_bytes_with_nul(RAY_GENERATION_SHADER_ENTRY_NAME_BYTE).unwrap())
+                .build();
 
-        let miss_stage_info = PipelineShaderStageCreateInfo::builder()
-            .stage(ShaderStageFlags::MISS_KHR)
-            .module(shader_module)
-            .name(CString::new(MISS_SHADER_ENTRY_NAME).unwrap().as_c_str())
-            .build();
+            let miss_stage_info = PipelineShaderStageCreateInfo::builder()
+                .stage(ShaderStageFlags::MISS_KHR)
+                .module(shader_module)
+                .name(CStr::from_bytes_with_nul(MISS_SHADER_ENTRY_NAME_BYTE).unwrap())
+                .build();
 
-        let sphere_intersection_stage_info = PipelineShaderStageCreateInfo::builder()
-            .stage(ShaderStageFlags::INTERSECTION_KHR)
-            .module(shader_module)
-            .name(CString::new(SPHERE_INTERSECTION_SHADER_ENTRY_NAME).unwrap().as_c_str())
-            .build();
+            let sphere_intersection_stage_info = PipelineShaderStageCreateInfo::builder()
+                .stage(ShaderStageFlags::INTERSECTION_KHR)
+                .module(shader_module)
+                .name(CStr::from_bytes_with_nul(SPHERE_INTERSECTION_SHADER_ENTRY_NAME_BYTE).unwrap())
+                .build();
 
-        let sphere_closest_hit_stage_info = PipelineShaderStageCreateInfo::builder()
-            .stage(ShaderStageFlags::CLOSEST_HIT_KHR)
-            .module(shader_module)
-            .name(CString::new(SPHERE_CLOSEST_HIT_SHADER_ENTRY_NAME).unwrap().as_c_str())
-            .build();
+            let sphere_closest_hit_stage_info = PipelineShaderStageCreateInfo::builder()
+                .stage(ShaderStageFlags::CLOSEST_HIT_KHR)
+                .module(shader_module)
+                .name(CStr::from_bytes_with_nul(SPHERE_CLOSEST_HIT_SHADER_ENTRY_NAME_BYTE).unwrap())
+                .build();
 
-        let triangle_closest_hit_stage_info = PipelineShaderStageCreateInfo::builder()
-            .stage(ShaderStageFlags::CLOSEST_HIT_KHR)
-            .module(shader_module)
-            .name(CString::new(TRIANGLE_CLOSEST_HIT_SHADER_ENTRY_NAME).unwrap().as_c_str())
-            .build();
+            let triangle_closest_hit_stage_info = PipelineShaderStageCreateInfo::builder()
+                .stage(ShaderStageFlags::CLOSEST_HIT_KHR)
+                .module(shader_module)
+                .name(CStr::from_bytes_with_nul(TRIANGLE_CLOSEST_HIT_SHADER_ENTRY_NAME_BYTE).unwrap())
+                .build();
 
-        let triangle_any_hit_stage_info = PipelineShaderStageCreateInfo::builder()
-            .stage(ShaderStageFlags::ANY_HIT_KHR)
-            .module(shader_module)
-            .name(CString::new(TRIANGLE_ANY_HIT_SHADER_ENTRY_NAME).unwrap().as_c_str())
-            .build();
+            let triangle_any_hit_stage_info = PipelineShaderStageCreateInfo::builder()
+                .stage(ShaderStageFlags::ANY_HIT_KHR)
+                .module(shader_module)
+                .name(CStr::from_bytes_with_nul(TRIANGLE_ANY_HIT_SHADER_ENTRY_NAME_BYTE).unwrap())
+                .build();
 
-        let shader_stages = [
-            ray_generation_stage_info,
-            miss_stage_info,
-            sphere_intersection_stage_info,
-            sphere_closest_hit_stage_info,
-            triangle_closest_hit_stage_info,
-            triangle_any_hit_stage_info,
-        ];
+            [
+                ray_generation_stage_info,
+                miss_stage_info,
+                sphere_intersection_stage_info,
+                sphere_closest_hit_stage_info,
+                triangle_closest_hit_stage_info,
+                triangle_any_hit_stage_info,
+            ]
+        };
 
         let shader_groups = vec![
             //ray_generation
