@@ -8,6 +8,6 @@ fn main() -> Result<(), anyhow::Error> {
         .print_metadata(MetadataPrintout::Full)
         .build()?;
     */
-    
+
     Ok(())
 }

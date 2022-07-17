@@ -10,3 +10,4 @@ pub mod pipelines;
 mod acceleration_structures;
 pub mod commands;
 mod mesh_buffer;
+pub mod shader_module;
