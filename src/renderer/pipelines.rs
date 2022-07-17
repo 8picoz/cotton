@@ -105,7 +105,7 @@ impl Pipelines<'_> {
 
         let acceleration_structures = TriangleAccelerationStructure::new(
             backends,
-            
+
         );
 
         let (rt_pipeline_properties, rt_pipeline)

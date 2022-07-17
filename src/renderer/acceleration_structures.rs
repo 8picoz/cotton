@@ -6,14 +6,14 @@ use crate::renderer::backends::Backends;
 use classical_raytracer::Vertex;
 use classical_raytracer_shader::vertex::Vertex;
 use crate::renderer::commands::Commands;
+use crate::renderer::mesh_buffer::MeshBuffer;
 
 pub struct TriangleAccelerationStructure<'a> {
     device: &'a device,
     pub acceleration_structure: AccelerationStructure,
     pub bottom_acceleration_structure: AccelerationStructureKHR,
     pub top_acceleration_structure: AccelerationStructureKHR,
-    pub vertex_buffer: Buffers<'a>,
-    pub index_buffer: Buffers<'a>,
+    pub mesh_buffer: MeshBuffer<'a>,
 }
 
 impl TriangleAccelerationStructure<'_> {
@@ -45,6 +45,8 @@ impl TriangleAccelerationStructure<'_> {
 
         let indices = vec![0, 1, 2];
 
+        let mesh_buffer = MeshBuffer::new(&backends.device, vertices, indices, device_memory_properties);
+
         //TODO: このbottom asをモデルごとに作成するようにしてtop asと紐づける
         let (
             bottom_acceleration_structure,
@@ -55,15 +57,16 @@ impl TriangleAccelerationStructure<'_> {
             &backends.device,
             device_memory_properties,
             &acceleration_structure,
-            vertices,
-            indices,
+            &mesh_buffer,
             commands,
             graphics_queue,
         );
 
         Self {
+            device,
             acceleration_structure,
             bottom_acceleration_structure,
+            mesh_buffer,
         }
     }
 
@@ -71,44 +74,10 @@ impl TriangleAccelerationStructure<'_> {
         device: &'a Device,
         device_memory_properties: PhysicalDeviceMemoryProperties,
         acceleration_structure: &'a AccelerationStructure,
-        vertices: Vec<Vertex>,
-        indices: Vec<u32>,
+        mesh_buffer: &MeshBuffer,
         commands: Commands,
         graphics_queue: Queue,
     ) -> (AccelerationStructureKHR, Buffers<'a>, Buffers<'a>, Buffers<'a>) {
-
-        let vertex_stride = std::mem::size_of::<Vertex>();
-        let vertex_buffer_size = vertex_stride * vertices.len();
-        let max_vertex = vertices.len() as u32 - 1;
-
-        let mut vertex_buffer = Buffers::new(
-            device,
-            device_memory_properties,
-            vertex_buffer_size as DeviceSize,
-            BufferUsageFlags::STORAGE_BUFFER
-                | BufferUsageFlags::SHADER_DEVICE_ADDRESS
-                | BufferUsageFlags::ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_KHR,
-            MemoryPropertyFlags::HOST_VISIBLE
-                | MemoryPropertyFlags::HOST_COHERENT,
-        );
-
-        vertex_buffer.store(&VERTICES);
-
-        let index_buffer_size = std::mem::size_of::<u32>() * indices.len();
-
-        let mut index_buffer = Buffers::new(
-            device,
-            device_memory_properties,
-            index_buffer_size as DeviceSize,
-            BufferUsageFlags::STORAGE_BUFFER
-                | BufferUsageFlags::SHADER_DEVICE_ADDRESS
-                | BufferUsageFlags::ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_KHR,
-            MemoryPropertyFlags::HOST_VISIBLE
-                | MemoryPropertyFlags::HOST_COHERENT,
-        );
-
-        index_buffer.store(&indices);
-
         let geometry = AccelerationStructureGeometryKHR::builder()
             //Dataのタイプ
             .geometry_type(GeometryTypeKHR::TRIANGLES)
@@ -120,8 +89,8 @@ impl TriangleAccelerationStructure<'_> {
                             vertex_buffer.get_buffer_address()
                         },
                     })
-                    .max_vertex(max_vertex)
-                    .vertex_stride(vertex_stride as u64)
+                    .max_vertex(mesh_buffer.max_vertex)
+                    .vertex_stride(mesh_buffer.vertex_stride)
                     .index_data(DeviceOrHostAddressConstKHR {
                         device_address: unsafe {
                             index_buffer.get_buffer_address()

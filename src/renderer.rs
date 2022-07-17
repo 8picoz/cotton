@@ -9,3 +9,4 @@ pub mod render_passes;
 pub mod pipelines;
 mod acceleration_structures;
 pub mod commands;
+mod mesh_buffer;
