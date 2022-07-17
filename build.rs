@@ -7,7 +7,7 @@ fn main() -> Result<(), anyhow::Error> {
     SpirvBuilder::new("shaders/classical_raytracer_shader", VULKAN_TARGET)
         .print_metadata(MetadataPrintout::Full)
         .build()?;
-
-     */
+    */
+    
     Ok(())
 }
