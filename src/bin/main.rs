@@ -6,6 +6,7 @@ use cotton::constants::{DEFAULT_WINDOW_HEIGHT, DEFAULT_WINDOW_WIDTH};
 use cotton::renderer::pipelines::Pipelines;
 
 use cotton::renderer::render_passes::RenderPasses;
+use cotton::renderer::shader_module::create_shader_module;
 use cotton::renderer::swapchains::Swapchains;
 use cotton::window_handlers::WindowHandlers;
 
@@ -37,9 +38,15 @@ fn to_window() {
 
     let render_passes = RenderPasses::new(&backends, swapchains.format, swapchain_images.image_views.clone(), swapchains.extent);
 
+    let code = include_bytes!(env!("shader.spv"));
+    let shader_module = create_shader_module(&device, code);
+
     let pipelines = Pipelines::new(
-        &backends.device,
-        
+        &backends,
+        shader_module,
+        swapchains.extent,
+        &render_passes,
+        graphics_queue
     );
 }
 
