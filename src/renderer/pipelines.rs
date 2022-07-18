@@ -4,7 +4,7 @@ use ash::extensions::khr::{AccelerationStructure, RayTracingPipeline};
 use ash::vk::{AccelerationStructureNV, DeferredOperationKHR, DescriptorSetLayoutBinding, DescriptorSetLayoutCreateInfo, Extent2D, PhysicalDevice, PhysicalDeviceProperties2, PhysicalDeviceRayTracingPipelinePropertiesKHR, Pipeline, PipelineCache, PipelineLayout, PipelineLayoutCreateInfo, PipelineShaderStageCreateInfo, PushConstantRange, Queue, RayTracingPipelineCreateInfoKHR, RayTracingShaderGroupCreateInfoKHR, RayTracingShaderGroupTypeKHR, SHADER_UNUSED_KHR, ShaderModule, ShaderStageFlags};
 use log::debug;
 use crate::constants::{FRAGMENT_SHADER_ENTRY_NAME, MISS_SHADER_ENTRY_NAME, MISS_SHADER_ENTRY_NAME_BYTE, RAY_GENERATION_SHADER_ENTRY_NAME, RAY_GENERATION_SHADER_ENTRY_NAME_BYTE, SPHERE_CLOSEST_HIT_SHADER_ENTRY_NAME, SPHERE_CLOSEST_HIT_SHADER_ENTRY_NAME_BYTE, SPHERE_INTERSECTION_SHADER_ENTRY_NAME, SPHERE_INTERSECTION_SHADER_ENTRY_NAME_BYTE, TRIANGLE_ANY_HIT_SHADER_ENTRY_NAME, TRIANGLE_ANY_HIT_SHADER_ENTRY_NAME_BYTE, TRIANGLE_CLOSEST_HIT_SHADER_ENTRY_NAME, TRIANGLE_CLOSEST_HIT_SHADER_ENTRY_NAME_BYTE, VERTEX_SHADER_ENTRY_NAME};
-use crate::renderer::acceleration_structures::TriangleAccelerationStructure;
+use crate::renderer::acceleration_structures::triangle_bottom_level_acceleration_structure::TriangleBottomLevelAccelerationStructure;
 use crate::renderer::backends::Backends;
 use crate::renderer::render_passes::RenderPasses;
 
@@ -12,7 +12,7 @@ pub struct Pipelines<'a> {
     pub device: &'a Device,
     pub pipeline: Pipeline,
 
-    pub(crate) acceleration_structures: TriangleAccelerationStructure<'a>,
+    pub(crate) acceleration_structures: TriangleBottomLevelAccelerationStructure<'a>,
     pub(crate) ray_tracing_pipeline: RayTracingPipeline,
     pub(crate) ray_tracing_pipeline_properties: PhysicalDeviceRayTracingPipelinePropertiesKHR,
 }
@@ -151,7 +151,7 @@ impl<'a> Pipelines<'a> {
                 .build(),
         ];
 
-        let acceleration_structures = TriangleAccelerationStructure::new(
+        let acceleration_structures = TriangleBottomLevelAccelerationStructure::new(
             &backends,
             backends.device_memory_properties,
             &backends.commands,
