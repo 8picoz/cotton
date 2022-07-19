@@ -15,7 +15,7 @@ use crate::renderer::mesh_buffer::MeshBuffer;
 
 pub struct TriangleBottomLevelAccelerationStructure<'a> {
     device: &'a Device,
-    pub acceleration_structure: AccelerationStructure,
+    pub acceleration_structure: &'a AccelerationStructure,
     pub bottom_acceleration_structure: AccelerationStructureKHR,
     pub bottom_acceleration_buffer: Buffers<'a>,
     pub mesh_buffer: MeshBuffer<'a>,
@@ -24,12 +24,11 @@ pub struct TriangleBottomLevelAccelerationStructure<'a> {
 impl<'a> TriangleBottomLevelAccelerationStructure<'a> {
     pub fn new(
         backends: &'a Backends,
+        acceleration_structure: &'a AccelerationStructure,
         device_memory_properties: PhysicalDeviceMemoryProperties,
         commands: &Commands,
         graphics_queue: Queue,
     ) -> Self {
-        let acceleration_structure
-            = AccelerationStructure::new(&backends.instance, &backends.device);
 
         //とりあえず定数(三角形)
         //TODO: 外部から入力できるようにする
