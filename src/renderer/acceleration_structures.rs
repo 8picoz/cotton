@@ -3,7 +3,7 @@ use ash::extensions::khr::AccelerationStructure;
 use ash::vk::{PhysicalDeviceMemoryProperties, Queue};
 use crate::renderer::acceleration_structures::triangle_bottom_level_acceleration_structure::TriangleBottomLevelAccelerationStructure;
 use crate::renderer::backends::Backends;
-use crate::renderer::commands::Commands;
+use crate::renderer::backends::commands::Commands;
 
 pub mod triangle_bottom_level_acceleration_structure;
 pub mod instances;

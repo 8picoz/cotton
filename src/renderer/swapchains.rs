@@ -8,8 +8,8 @@ use log::{debug, info};
 use winit::dpi::{LogicalSize, Size};
 use crate::renderer::backends::Backends;
 use crate::renderer::images::Images;
-use crate::renderer::queue_family_indices::QueueFamilyIndices;
-use crate::renderer::surfaces::Surfaces;
+use crate::renderer::backends::queue_family_indices::QueueFamilyIndices;
+use crate::renderer::backends::surfaces::Surfaces;
 use crate::renderer::swapchain_support_details::SwapchainSupportDetails;
 
 pub struct Swapchains {

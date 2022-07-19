@@ -7,3 +7,4 @@ pub mod window_handlers;
 pub mod constants;
 pub mod renderer;
 pub mod buffers;
+pub mod scene;

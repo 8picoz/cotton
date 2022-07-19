@@ -1,6 +1,6 @@
 use ash::Instance;
 use ash::vk::{PhysicalDevice, QueueFlags};
-use crate::renderer::surfaces::Surfaces;
+use crate::renderer::backends::surfaces::Surfaces;
 use crate::renderer::swapchain_support_details::SwapchainSupportDetails;
 
 pub struct QueueFamilyIndices {

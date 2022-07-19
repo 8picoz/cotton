@@ -6,7 +6,7 @@ use log::debug;
 use crate::buffers::Buffers;
 use crate::renderer::backends::Backends;
 use classical_raytracer_shader::Vertex;
-use crate::renderer::commands::Commands;
+use crate::renderer::backends::commands::Commands;
 use crate::renderer::mesh_buffer::MeshBuffer;
 
 //instanceを作って

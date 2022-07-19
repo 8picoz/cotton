@@ -5,7 +5,7 @@ use ash::{Instance, vk};
 use ash::vk::{Extent2D, PhysicalDevice, PresentInfoKHR, PresentModeKHR, SurfaceCapabilitiesKHR, SurfaceFormatKHR};
 use log::info;
 use winit::dpi::Size;
-use crate::renderer::surfaces::Surfaces;
+use crate::renderer::backends::surfaces::Surfaces;
 
 pub struct SwapchainSupportDetails {
     pub capabilities: SurfaceCapabilitiesKHR,
