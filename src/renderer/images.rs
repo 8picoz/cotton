@@ -10,7 +10,6 @@ pub struct Images<'a> {
 }
 
 impl<'a> Images<'a> {
-
     //画像単体で出力したいならvk::Imageを素のまま作ってそこに保存すれば良い
     pub fn new(
         device: &'a Device,
