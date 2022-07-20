@@ -1,9 +1,10 @@
 use ash::Device;
 use ash::vk::{AccelerationStructureInstanceKHR, AccelerationStructureReferenceKHR, Buffer, BufferCopy, BufferUsageFlags, DeviceAddress, DeviceSize, GeometryInstanceFlagsKHR, MemoryPropertyFlags, Packed24_8, PhysicalDeviceMemoryProperties, TransformMatrixKHR};
+use log::debug;
 use crate::buffers::Buffers;
 use crate::renderer::acceleration_structures::triangle_bottom_level_acceleration_structure::TriangleBottomLevelAccelerationStructure;
 
-struct Scene<'a> {
+pub struct Scene<'a> {
     device: &'a Device,
     instances: Vec<AccelerationStructureInstanceKHR>,
     instance_buffer: Buffers<'a>,
@@ -16,6 +17,8 @@ impl<'a> Scene<'a> {
         //色々なモデルに対応したい場合はここを複数受け取れるように
         triangle_bottom_acceleration_structure_handle: DeviceAddress,
     ) -> Self {
+        debug!("build scene");
+
         let size = 1.0;
         let pos_x = 0.0;
         let pos_y = 1.0;

@@ -2,11 +2,13 @@ use std::env;
 use log::debug;
 
 use cotton::constants::{DEFAULT_WINDOW_HEIGHT, DEFAULT_WINDOW_WIDTH};
+use cotton::renderer::acceleration_structures::AccelerationStructures;
 use cotton::renderer::pipelines::Pipelines;
 
 use cotton::renderer::render_passes::RenderPasses;
 use cotton::renderer::shader_module::create_shader_module;
 use cotton::renderer::swapchains::Swapchains;
+use cotton::scene::Scene;
 use cotton::window_handlers::WindowHandlers;
 
 fn main() {
@@ -39,6 +41,22 @@ fn to_window() {
 
     let code = include_bytes!(env!("classical_raytracer_shader.spv"));
     let shader_module = create_shader_module(&backends.device, code);
+
+    let acceleration_structures = AccelerationStructures::new(
+        &backends
+    );
+
+    let triangle_blas = acceleration_structures.create_triangle_blas(
+        backends.device_memory_properties,
+        &backends.commands,
+        graphics_queue,
+    );
+
+    let scene = Scene::build_scene(
+        &backends.device,
+        backends.device_memory_properties,
+        triangle_blas.get_device_address_info()
+    );
 
     let pipelines = Pipelines::new(
         &backends,

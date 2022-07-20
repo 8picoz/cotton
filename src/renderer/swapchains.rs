@@ -24,6 +24,8 @@ impl Swapchains {
         backends: &Backends,
         window_size: S,
     ) -> Self {
+        debug!("create swapchains");
+
         //as_refはOptionなどの中身に対してborrowすることが出来る
         let surfaces = backends.surfaces.as_ref().expect("Not found surfaces");
 
@@ -95,6 +97,8 @@ impl Swapchains {
     }
 
     pub fn get_swapchain_images<'a>(&'a self, device: &'a Device) -> Images {
+        debug!("get swapchain images");
+
         let images = unsafe { self.swapchain.get_swapchain_images(self.swapchain_khr).unwrap() };
 
         Images::new(device, images, self.format)

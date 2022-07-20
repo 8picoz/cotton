@@ -13,8 +13,6 @@ pub struct Pipelines<'a> {
     pub device: &'a Device,
     pub pipeline: Pipeline,
 
-    pub(crate) acceleration_structures: AccelerationStructures<'a>,
-    pub(crate) triangle_blas: TriangleBottomLevelAccelerationStructure<'a>,
     pub(crate) ray_tracing_pipeline: RayTracingPipeline,
     pub(crate) ray_tracing_pipeline_properties: PhysicalDeviceRayTracingPipelinePropertiesKHR,
 }
@@ -28,6 +26,7 @@ impl<'a> Pipelines<'a> {
         render_passes: &RenderPasses,
         graphics_queue: Queue,
     ) -> Self {
+        debug!("create pipeline");
 
         //Descriptor Binding
 
@@ -153,16 +152,6 @@ impl<'a> Pipelines<'a> {
                 .build(),
         ];
 
-        let acceleration_structures = AccelerationStructures::new(
-            &backends
-        );
-
-        let triangle_blas = acceleration_structures.create_triangle_blas(
-            backends.device_memory_properties,
-            &backends.commands,
-            graphics_queue,
-        );
-
         let (rt_pipeline_properties, rt_pipeline)
             = Self::create_raytracing_structure(&backends.instance, backends.physical_device, &backends.device);
 
@@ -186,8 +175,6 @@ impl<'a> Pipelines<'a> {
         Self {
             device: &backends.device,
             pipeline,
-            acceleration_structures,
-            triangle_blas,
             ray_tracing_pipeline_properties: rt_pipeline_properties,
             ray_tracing_pipeline: rt_pipeline,
         }

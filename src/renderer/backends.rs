@@ -32,6 +32,8 @@ pub struct Backends {
 impl Backends {
     //with surface
     pub fn new(window_handlers: &WindowHandlers , enable_validation_layer: bool) -> anyhow::Result<Self> {
+        debug!("create backends");
+
         let entry = unsafe { Entry::load()? };
         let instance = Self::create_instance(&entry, enable_validation_layer)?;
 
@@ -280,6 +282,8 @@ impl Backends {
         &self,
         queue_index: u32,
     ) -> Queue {
+        debug!("create graphics queue");
+
         unsafe { self.device.get_device_queue(
             self.queue_family_indices.graphics_family.expect("Failed to create graphics family queue"),
                             queue_index
@@ -290,6 +294,8 @@ impl Backends {
         &self,
         queue_index: u32,
     ) -> Queue {
+        debug!("create present queue");
+
         unsafe { self.device.get_device_queue(
             self.queue_family_indices.present_family.expect("Failed to create graphics family queue"),
             queue_index

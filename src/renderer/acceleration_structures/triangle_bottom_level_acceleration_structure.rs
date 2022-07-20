@@ -219,7 +219,7 @@ impl<'a> TriangleBottomLevelAccelerationStructure<'a> {
         (bottom_accel, bottom_accel_buffer)
     }
 
-    pub fn create_device_address_info(&self) -> DeviceAddress {
+    pub fn get_device_address_info(&self) -> DeviceAddress {
         let address_info = AccelerationStructureDeviceAddressInfoKHR::builder()
             .acceleration_structure(self.bottom_acceleration_structure)
             .build();
