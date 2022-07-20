@@ -25,8 +25,6 @@ impl<'a> TriangleBottomLevelAccelerationStructure<'a> {
     pub fn new(
         backends: &'a Backends,
         acceleration_structure: &'a AccelerationStructure,
-        device_memory_properties: PhysicalDeviceMemoryProperties,
-        commands: &Commands,
         graphics_queue: Queue,
     ) -> Self {
 
@@ -49,7 +47,7 @@ impl<'a> TriangleBottomLevelAccelerationStructure<'a> {
 
         let indices = vec![0, 1, 2];
 
-        let mesh_buffer = MeshBuffer::new(&backends.device, vertices, indices, device_memory_properties);
+        let mesh_buffer = MeshBuffer::new(&backends.device, vertices, indices, backends.device_memory_properties);
 
         //TODO: このbottom asをモデルごとに作成するようにしてtop asと紐づける
         let (
@@ -57,10 +55,10 @@ impl<'a> TriangleBottomLevelAccelerationStructure<'a> {
             bottom_acceleration_buffer
         ) = Self::create_bottom_acceleration(
             &backends.device,
-            device_memory_properties,
+            backends.device_memory_properties,
             &acceleration_structure,
             &mesh_buffer,
-            commands,
+            &backends.commands,
             graphics_queue,
         );
 

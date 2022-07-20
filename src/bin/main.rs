@@ -47,15 +47,17 @@ fn to_window() {
     );
 
     let triangle_blas = acceleration_structures.create_triangle_blas(
-        backends.device_memory_properties,
-        &backends.commands,
-        graphics_queue,
+        graphics_queue
     );
 
     let scene = Scene::build_scene(
-        &backends.device,
-        backends.device_memory_properties,
+        &backends,
         triangle_blas.get_device_address_info()
+    );
+
+    let tlas = acceleration_structures.create_tlas(
+        scene,
+        graphics_queue
     );
 
     let pipelines = Pipelines::new(

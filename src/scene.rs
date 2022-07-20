@@ -3,17 +3,17 @@ use ash::vk::{AccelerationStructureInstanceKHR, AccelerationStructureReferenceKH
 use log::debug;
 use crate::buffers::Buffers;
 use crate::renderer::acceleration_structures::triangle_bottom_level_acceleration_structure::TriangleBottomLevelAccelerationStructure;
+use crate::renderer::backends::Backends;
 
 pub struct Scene<'a> {
-    device: &'a Device,
-    instances: Vec<AccelerationStructureInstanceKHR>,
-    instance_buffer: Buffers<'a>,
+    backends: &'a Backends,
+    pub instances: Vec<AccelerationStructureInstanceKHR>,
+    pub instance_buffer: Buffers<'a>,
 }
 
 impl<'a> Scene<'a> {
     pub fn build_scene(
-        device: &'a Device,
-        device_memory_properties: PhysicalDeviceMemoryProperties,
+        backends: &'a Backends,
         //色々なモデルに対応したい場合はここを複数受け取れるように
         triangle_bottom_acceleration_structure_handle: DeviceAddress,
     ) -> Self {
@@ -43,8 +43,8 @@ impl<'a> Scene<'a> {
             std::mem::size_of::<AccelerationStructureInstanceKHR>() * instances.len();
 
         let mut instance_buffer = Buffers::new(
-            device,
-            device_memory_properties,
+            &backends.device,
+            backends.device_memory_properties,
             instance_buffer_size as DeviceSize,
             BufferUsageFlags::SHADER_DEVICE_ADDRESS
                 | BufferUsageFlags::ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_KHR,
@@ -56,7 +56,7 @@ impl<'a> Scene<'a> {
         instance_buffer.store(&instances);
 
         Self {
-            device,
+            backends,
             instances,
             instance_buffer,
         }
