@@ -25,8 +25,7 @@ pub struct Backends {
     pub device: Device,
     pub surfaces: Option<Surfaces>,
     pub commands: Commands,
-
-    pub(crate) device_memory_properties: PhysicalDeviceMemoryProperties,
+    pub device_memory_properties: PhysicalDeviceMemoryProperties,
     queue_family_indices: QueueFamilyIndices,
 }
 
