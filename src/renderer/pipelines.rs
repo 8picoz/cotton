@@ -8,6 +8,7 @@ use crate::renderer::acceleration_structures::AccelerationStructures;
 use crate::renderer::acceleration_structures::triangle_bottom_level_acceleration_structure::TriangleBottomLevelAccelerationStructure;
 use crate::renderer::backends::Backends;
 use crate::renderer::render_passes::RenderPasses;
+use crate::renderer::shader_module::ShaderModules;
 
 pub struct Pipelines<'a> {
     pub device: &'a Device,
@@ -21,7 +22,7 @@ impl<'a> Pipelines<'a> {
     //with raytracing
     pub fn new(
         backends: &'a Backends,
-        shader_module: ShaderModule,
+        shader_modules: ShaderModules,
         swapchain_extent: Extent2D,
         render_passes: &RenderPasses,
         graphics_queue: Queue,
@@ -70,37 +71,37 @@ impl<'a> Pipelines<'a> {
         let shader_stages = unsafe {
             let ray_generation_stage_info = PipelineShaderStageCreateInfo::builder()
                 .stage(ShaderStageFlags::RAYGEN_KHR)
-                .module(shader_module)
+                .module(shader_modules.shader_module)
                 .name(CStr::from_bytes_with_nul(RAY_GENERATION_SHADER_ENTRY_NAME_BYTE).unwrap())
                 .build();
 
             let miss_stage_info = PipelineShaderStageCreateInfo::builder()
                 .stage(ShaderStageFlags::MISS_KHR)
-                .module(shader_module)
+                .module(shader_modules.shader_module)
                 .name(CStr::from_bytes_with_nul(MISS_SHADER_ENTRY_NAME_BYTE).unwrap())
                 .build();
 
             let sphere_intersection_stage_info = PipelineShaderStageCreateInfo::builder()
                 .stage(ShaderStageFlags::INTERSECTION_KHR)
-                .module(shader_module)
+                .module(shader_modules.shader_module)
                 .name(CStr::from_bytes_with_nul(SPHERE_INTERSECTION_SHADER_ENTRY_NAME_BYTE).unwrap())
                 .build();
 
             let sphere_closest_hit_stage_info = PipelineShaderStageCreateInfo::builder()
                 .stage(ShaderStageFlags::CLOSEST_HIT_KHR)
-                .module(shader_module)
+                .module(shader_modules.shader_module)
                 .name(CStr::from_bytes_with_nul(SPHERE_CLOSEST_HIT_SHADER_ENTRY_NAME_BYTE).unwrap())
                 .build();
 
             let triangle_closest_hit_stage_info = PipelineShaderStageCreateInfo::builder()
                 .stage(ShaderStageFlags::CLOSEST_HIT_KHR)
-                .module(shader_module)
+                .module(shader_modules.shader_module)
                 .name(CStr::from_bytes_with_nul(TRIANGLE_CLOSEST_HIT_SHADER_ENTRY_NAME_BYTE).unwrap())
                 .build();
 
             let triangle_any_hit_stage_info = PipelineShaderStageCreateInfo::builder()
                 .stage(ShaderStageFlags::ANY_HIT_KHR)
-                .module(shader_module)
+                .module(shader_modules.shader_module)
                 .name(CStr::from_bytes_with_nul(TRIANGLE_ANY_HIT_SHADER_ENTRY_NAME_BYTE).unwrap())
                 .build();
 

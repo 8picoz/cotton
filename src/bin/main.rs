@@ -6,7 +6,7 @@ use cotton::renderer::acceleration_structures::AccelerationStructures;
 use cotton::renderer::pipelines::Pipelines;
 
 use cotton::renderer::render_passes::RenderPasses;
-use cotton::renderer::shader_module::create_shader_module;
+use cotton::renderer::shader_module::ShaderModules;
 use cotton::renderer::swapchains::Swapchains;
 use cotton::scene::Scene;
 use cotton::window_handlers::WindowHandlers;
@@ -40,7 +40,7 @@ fn to_window() {
     let render_passes = RenderPasses::new(&backends, swapchains.format, swapchain_images.image_views.clone(), swapchains.extent);
 
     let code = include_bytes!(env!("classical_raytracer_shader.spv"));
-    let shader_module = create_shader_module(&backends.device, code);
+    let shader_modules = ShaderModules::new(&backends.device, code);
 
     let acceleration_structures = AccelerationStructures::new(
         &backends
@@ -62,11 +62,13 @@ fn to_window() {
 
     let pipelines = Pipelines::new(
         &backends,
-        shader_module,
+        shader_modules,
         swapchains.extent,
         &render_passes,
         graphics_queue
     );
+
+    debug!("close");
 }
 
 //TODO
