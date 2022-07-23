@@ -101,7 +101,7 @@ impl Swapchains {
 
         let images = unsafe { self.swapchain.get_swapchain_images(self.swapchain_khr).unwrap() };
 
-        Images::new(device, images, self.format)
+        Images::create_images_for_swapchain_images(device, images, self.format)
     }
 }
 

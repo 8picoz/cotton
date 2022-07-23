@@ -2,10 +2,11 @@ use std::ffi::{CStr, CString};
 use std::intrinsics::atomic_load_unordered;
 use ash::{Device, Instance, vk};
 use ash::extensions::khr::{AccelerationStructure, RayTracingPipeline};
-use ash::vk::{AccelerationStructureNV, DeferredOperationKHR, DescriptorPoolCreateInfo, DescriptorPoolSize, DescriptorSetAllocateInfo, DescriptorSetLayout, DescriptorSetLayoutBinding, DescriptorSetLayoutCreateInfo, DescriptorSetVariableDescriptorCountAllocateInfo, DescriptorType, Extent2D, PhysicalDevice, PhysicalDeviceProperties2, PhysicalDeviceRayTracingPipelinePropertiesKHR, Pipeline, PipelineCache, PipelineLayout, PipelineLayoutCreateInfo, PipelineShaderStageCreateInfo, PushConstantRange, Queue, RayTracingPipelineCreateInfoKHR, RayTracingShaderGroupCreateInfoKHR, RayTracingShaderGroupTypeKHR, SHADER_UNUSED_KHR, ShaderModule, ShaderStageFlags};
+use ash::vk::{AccelerationStructureNV, DeferredOperationKHR, DescriptorImageInfo, DescriptorPoolCreateInfo, DescriptorPoolSize, DescriptorSetAllocateInfo, DescriptorSetLayout, DescriptorSetLayoutBinding, DescriptorSetLayoutCreateInfo, DescriptorSetVariableDescriptorCountAllocateInfo, DescriptorType, Extent2D, ImageLayout, PhysicalDevice, PhysicalDeviceProperties2, PhysicalDeviceRayTracingPipelinePropertiesKHR, Pipeline, PipelineCache, PipelineLayout, PipelineLayoutCreateInfo, PipelineShaderStageCreateInfo, PushConstantRange, Queue, RayTracingPipelineCreateInfoKHR, RayTracingShaderGroupCreateInfoKHR, RayTracingShaderGroupTypeKHR, SHADER_UNUSED_KHR, ShaderModule, ShaderStageFlags, WriteDescriptorSet, WriteDescriptorSetAccelerationStructureKHR};
 use log::debug;
 use crate::constants::{FRAGMENT_SHADER_ENTRY_NAME, MISS_SHADER_ENTRY_NAME, MISS_SHADER_ENTRY_NAME_BYTE, RAY_GENERATION_SHADER_ENTRY_NAME, RAY_GENERATION_SHADER_ENTRY_NAME_BYTE, SPHERE_CLOSEST_HIT_SHADER_ENTRY_NAME, SPHERE_CLOSEST_HIT_SHADER_ENTRY_NAME_BYTE, SPHERE_INTERSECTION_SHADER_ENTRY_NAME, SPHERE_INTERSECTION_SHADER_ENTRY_NAME_BYTE, TRIANGLE_ANY_HIT_SHADER_ENTRY_NAME, TRIANGLE_ANY_HIT_SHADER_ENTRY_NAME_BYTE, TRIANGLE_CLOSEST_HIT_SHADER_ENTRY_NAME, TRIANGLE_CLOSEST_HIT_SHADER_ENTRY_NAME_BYTE, VERTEX_SHADER_ENTRY_NAME};
 use crate::renderer::acceleration_structures::AccelerationStructures;
+use crate::renderer::acceleration_structures::top_level_acceleration_structures::TopLevelAccelerationStructures;
 use crate::renderer::acceleration_structures::triangle_bottom_level_acceleration_structure::TriangleBottomLevelAccelerationStructure;
 use crate::renderer::backends::Backends;
 use crate::renderer::render_passes::RenderPasses;
@@ -228,7 +229,26 @@ impl<'a> Pipelines<'a> {
 
         let descriptor_set = descriptor_sets[0];
 
-        let tlas_structs = []
+        let tlas_structs = [top_level_acceleration_structures.top_level_acceleration_structure_khr];
+
+        let mut acceleration_structure_info = WriteDescriptorSetAccelerationStructureKHR::builder()
+            .acceleration_structures(&tlas_structs)
+            .build();
+
+        let mut acceleration_structure_write = WriteDescriptorSet::builder()
+            .dst_set(descriptor_set)
+            .dst_binding(0)
+            .dst_array_element(0)
+            .descriptor_type(DescriptorType::ACCELERATION_STRUCTURE_KHR)
+            .push_next(&mut acceleration_structure_info)
+            .build();
+
+        //AccelerationStructureだとdescriptor_countが自動セットされないので手動で設定する必要がある
+        acceleration_structure_write.descriptor_count = 1;
+
+        let image_info = [DescriptorImageInfo::builder()
+            .image_layout(ImageLayout::GENERAL)
+            .image_view()]
 
         Self {
             device: &backends.device,
