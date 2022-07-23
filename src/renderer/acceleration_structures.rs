@@ -9,7 +9,7 @@ use crate::renderer::backends::commands::Commands;
 use crate::scene::Scene;
 
 pub mod triangle_bottom_level_acceleration_structure;
-mod top_level_acceleration_structures;
+pub mod top_level_acceleration_structures;
 
 pub struct AccelerationStructures<'a> {
     backends: &'a Backends,

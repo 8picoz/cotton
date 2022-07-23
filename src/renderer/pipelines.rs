@@ -1,7 +1,8 @@
 use std::ffi::{CStr, CString};
+use std::intrinsics::atomic_load_unordered;
 use ash::{Device, Instance, vk};
 use ash::extensions::khr::{AccelerationStructure, RayTracingPipeline};
-use ash::vk::{AccelerationStructureNV, DeferredOperationKHR, DescriptorSetLayoutBinding, DescriptorSetLayoutCreateInfo, Extent2D, PhysicalDevice, PhysicalDeviceProperties2, PhysicalDeviceRayTracingPipelinePropertiesKHR, Pipeline, PipelineCache, PipelineLayout, PipelineLayoutCreateInfo, PipelineShaderStageCreateInfo, PushConstantRange, Queue, RayTracingPipelineCreateInfoKHR, RayTracingShaderGroupCreateInfoKHR, RayTracingShaderGroupTypeKHR, SHADER_UNUSED_KHR, ShaderModule, ShaderStageFlags};
+use ash::vk::{AccelerationStructureNV, DeferredOperationKHR, DescriptorPoolCreateInfo, DescriptorPoolSize, DescriptorSetAllocateInfo, DescriptorSetLayout, DescriptorSetLayoutBinding, DescriptorSetLayoutCreateInfo, DescriptorSetVariableDescriptorCountAllocateInfo, DescriptorType, Extent2D, PhysicalDevice, PhysicalDeviceProperties2, PhysicalDeviceRayTracingPipelinePropertiesKHR, Pipeline, PipelineCache, PipelineLayout, PipelineLayoutCreateInfo, PipelineShaderStageCreateInfo, PushConstantRange, Queue, RayTracingPipelineCreateInfoKHR, RayTracingShaderGroupCreateInfoKHR, RayTracingShaderGroupTypeKHR, SHADER_UNUSED_KHR, ShaderModule, ShaderStageFlags};
 use log::debug;
 use crate::constants::{FRAGMENT_SHADER_ENTRY_NAME, MISS_SHADER_ENTRY_NAME, MISS_SHADER_ENTRY_NAME_BYTE, RAY_GENERATION_SHADER_ENTRY_NAME, RAY_GENERATION_SHADER_ENTRY_NAME_BYTE, SPHERE_CLOSEST_HIT_SHADER_ENTRY_NAME, SPHERE_CLOSEST_HIT_SHADER_ENTRY_NAME_BYTE, SPHERE_INTERSECTION_SHADER_ENTRY_NAME, SPHERE_INTERSECTION_SHADER_ENTRY_NAME_BYTE, TRIANGLE_ANY_HIT_SHADER_ENTRY_NAME, TRIANGLE_ANY_HIT_SHADER_ENTRY_NAME_BYTE, TRIANGLE_CLOSEST_HIT_SHADER_ENTRY_NAME, TRIANGLE_CLOSEST_HIT_SHADER_ENTRY_NAME_BYTE, VERTEX_SHADER_ENTRY_NAME};
 use crate::renderer::acceleration_structures::AccelerationStructures;
@@ -25,6 +26,7 @@ impl<'a> Pipelines<'a> {
         shader_modules: ShaderModules,
         swapchain_extent: Extent2D,
         render_passes: &RenderPasses,
+        top_level_acceleration_structures: TopLevelAccelerationStructures,
         graphics_queue: Queue,
     ) -> Self {
         debug!("create pipeline");
@@ -64,7 +66,10 @@ impl<'a> Pipelines<'a> {
                 .build(),
         ];
 
-        let pipeline_layout = Self::create_pipeline_layout(&backends.device, &bindings);
+        let (
+            pipeline_layout,
+            descriptor_set_layout
+        ) = Self::create_pipeline_layout(&backends.device, &bindings);
 
         //stage
 
@@ -173,6 +178,58 @@ impl<'a> Pipelines<'a> {
             ).unwrap()[0]
         };
 
+        let descriptor_sizes = [
+            DescriptorPoolSize {
+                ty: DescriptorType::ACCELERATION_STRUCTURE_KHR,
+                descriptor_count: 1,
+            },
+            DescriptorPoolSize {
+                ty: DescriptorType::STORAGE_IMAGE,
+                descriptor_count: 1,
+            },
+            DescriptorPoolSize {
+                ty: DescriptorType::STORAGE_BUFFER,
+                descriptor_count: 1,
+            },
+            DescriptorPoolSize {
+                ty: DescriptorType::STORAGE_BUFFER,
+                descriptor_count: 1,
+            },
+            DescriptorPoolSize {
+                ty: DescriptorType::STORAGE_BUFFER,
+                descriptor_count: 1,
+            },
+        ];
+
+        let descriptor_pool_info = DescriptorPoolCreateInfo::builder()
+            .pool_sizes(&descriptor_sizes)
+            .max_sets(1)
+            .build();
+
+        let descriptor_pool = unsafe {
+            backends.device.create_descriptor_pool(&descriptor_pool_info, None).unwrap()
+        };
+
+        let descriptor_counts = [1];
+
+        let mut count_allocate_info = DescriptorSetVariableDescriptorCountAllocateInfo::builder()
+            .descriptor_counts(&descriptor_counts)
+            .build();
+
+        let descriptor_sets = unsafe {
+            backends.device.allocate_descriptor_sets(
+                &DescriptorSetAllocateInfo::builder()
+                    .descriptor_pool(descriptor_pool)
+                    .set_layouts(&[descriptor_set_layout])
+                    .push_next(&mut count_allocate_info)
+                    .build()
+            ).unwrap()
+        };
+
+        let descriptor_set = descriptor_sets[0];
+
+        let tlas_structs = []
+
         Self {
             device: &backends.device,
             pipeline,
@@ -204,7 +261,7 @@ impl<'a> Pipelines<'a> {
         (rt_pipeline_properties, rt_pipeline)
     }
 
-    fn create_pipeline_layout(device: &Device, bindings: &[DescriptorSetLayoutBinding]) -> PipelineLayout {
+    fn create_pipeline_layout(device: &Device, bindings: &[DescriptorSetLayoutBinding]) -> (PipelineLayout, DescriptorSetLayout) {
         let descriptor_set_layout = unsafe {
             device.create_descriptor_set_layout(
                 &DescriptorSetLayoutCreateInfo::builder()
@@ -226,6 +283,8 @@ impl<'a> Pipelines<'a> {
             .push_constant_ranges(&[push_constant_range])
             .build();
 
-        unsafe { device.create_pipeline_layout(&layout_create_info, None).unwrap() }
+        let pipeline_layout = unsafe { device.create_pipeline_layout(&layout_create_info, None).unwrap() };
+
+        (pipeline_layout, descriptor_set_layout)
     }
 }

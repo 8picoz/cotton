@@ -8,8 +8,8 @@ use crate::scene::Scene;
 pub struct TopLevelAccelerationStructures<'a> {
     backends: &'a Backends,
     acceleration_structure: &'a AccelerationStructure,
-    top_level_acceleration_structure_khr: AccelerationStructureKHR,
-    top_level_acceleration_structure_buffer: Buffers<'a>,
+    pub top_level_acceleration_structure_khr: AccelerationStructureKHR,
+    pub top_level_acceleration_structure_buffer: Buffers<'a>,
 }
 
 impl<'a> TopLevelAccelerationStructures<'a> {
