@@ -31,15 +31,21 @@ pub struct Backends {
 
 impl Backends {
     //with surface
-    pub fn new(window_handlers: &WindowHandlers , enable_validation_layer: bool) -> anyhow::Result<Self> {
+    pub fn new(window_handlers: Option<&WindowHandlers> , enable_validation_layer: bool) -> anyhow::Result<Self> {
         debug!("create backends");
 
         let entry = unsafe { Entry::load()? };
         let instance = Self::create_instance(&entry, enable_validation_layer)?;
 
-        let surfaces = Surfaces::new(&instance, &entry, &window_handlers.window);
+        let surfaces = if let Some(window_handlers) = window_handlers {
+            Some(
+                Surfaces::new(&instance, &entry, &window_handlers.window)
+            )
+        } else {
+            None
+        };
 
-        let physical_device = Self::pick_physical_device(&instance, &surfaces,
+        let physical_device = Self::pick_physical_device(&instance, surfaces.as_ref(),
         &[
             Swapchain::name(),
             AccelerationStructure::name(),
@@ -47,7 +53,7 @@ impl Backends {
             RayTracingPipeline::name(),
         ]);
 
-        let queue_family_indices = QueueFamilyIndices::new(&instance, Some(&surfaces), physical_device);
+        let queue_family_indices = QueueFamilyIndices::new(&instance, surfaces.as_ref(), physical_device);
 
         let device = Self::create_logical_device(
             &instance,
@@ -71,7 +77,7 @@ impl Backends {
             physical_device,
             device,
             commands,
-            surfaces: Some(surfaces),
+            surfaces,
             device_memory_properties,
             queue_family_indices,
         })
@@ -117,7 +123,7 @@ impl Backends {
     fn pick_physical_device(
         instance: &Instance,
         //with surface
-        surfaces: &Surfaces,
+        surfaces: Option<&Surfaces>,
         extensions: &[&CStr],
     ) -> PhysicalDevice {
         let physical_devices = unsafe {
@@ -129,7 +135,7 @@ impl Backends {
         let physical_device = physical_devices
             .into_iter()
             .find_map(|physical_device| {
-                let indices = QueueFamilyIndices::new(instance, Some(surfaces), physical_device);
+                let indices = QueueFamilyIndices::new(instance, surfaces, physical_device);
 
                 if unsafe { instance.enumerate_device_extension_properties(physical_device) }.map(
                     |exts| {
@@ -144,7 +150,7 @@ impl Backends {
                 }
 
                 //with surface
-                if !indices.is_device_suitable(instance, physical_device, surfaces) {
+                if !indices.is_device_suitable_for_surface(instance, physical_device, surfaces) {
                     return None;
                 }
 

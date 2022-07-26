@@ -42,17 +42,20 @@ impl QueueFamilyIndices {
     }
 
     //with surface
-    pub fn is_device_suitable(
+    pub fn is_device_suitable_for_surface(
         &self,
         instance: &Instance,
         physical_device: PhysicalDevice,
-        surfaces: &Surfaces,
+        surfaces: Option<&Surfaces>,
     ) -> bool {
+        let surfaces = surfaces.expect("Not acquired surface");
+
         let extension_support = Surfaces::check_swapchain_support(instance, physical_device);
 
         let mut swapchain_adequate = false;
 
         if extension_support {
+            //Swapchainのもろもろの機能の確認
             let swapchain_support_details = SwapchainSupportDetails::new(physical_device, surfaces);
 
             swapchain_adequate = !swapchain_support_details.formats.is_empty()
