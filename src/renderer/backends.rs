@@ -57,6 +57,7 @@ impl Backends {
 
         let device = Self::create_logical_device(
             &instance,
+            surfaces.as_ref(),
             physical_device,
             &queue_family_indices,
             enable_validation_layer,
@@ -149,9 +150,11 @@ impl Backends {
                     return None;
                 }
 
-                //with surface
-                if !indices.is_device_suitable_for_surface(instance, physical_device, surfaces) {
-                    return None;
+                if let Some(surfaces) = surfaces {
+                    //with surface
+                    if !indices.is_device_suitable_for_surface(instance, physical_device, surfaces) {
+                        return None;
+                    }
                 }
 
                 Some(physical_device)
@@ -172,21 +175,31 @@ impl Backends {
     //with surface
     fn create_logical_device(
         instance: &Instance,
+        surfaces: Option<&Surfaces>,
         physical_device: PhysicalDevice,
         queue_family_indices: &QueueFamilyIndices,
         enable_validation_layer: bool,
     ) -> Device {
         //with surface
-        let queue_create_info = [
-            DeviceQueueCreateInfo::builder()
-                .queue_family_index(queue_family_indices.graphics_family.unwrap())
-                .queue_priorities(&[1.0f32])
-                .build(),
-            DeviceQueueCreateInfo::builder()
-                .queue_family_index(queue_family_indices.present_family.unwrap())
-                .queue_priorities(&[1.0f32])
-                .build()
-        ];
+        let mut queue_create_info = if surfaces.is_some() {
+            vec![
+                DeviceQueueCreateInfo::builder()
+                    .queue_family_index(queue_family_indices.graphics_family.unwrap())
+                    .queue_priorities(&[1.0f32])
+                    .build(),
+                DeviceQueueCreateInfo::builder()
+                    .queue_family_index(queue_family_indices.present_family.unwrap())
+                    .queue_priorities(&[1.0f32])
+                    .build()
+            ]
+        } else {
+            vec![
+                DeviceQueueCreateInfo::builder()
+                    .queue_family_index(queue_family_indices.graphics_family.unwrap())
+                    .queue_priorities(&[1.0f32])
+                    .build(),
+            ]
+        };
 
         let mut scalar_block = PhysicalDeviceScalarBlockLayoutFeaturesEXT::default();
         //ディスクリプタ配列を扱えるように

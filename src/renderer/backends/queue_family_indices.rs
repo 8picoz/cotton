@@ -46,9 +46,8 @@ impl QueueFamilyIndices {
         &self,
         instance: &Instance,
         physical_device: PhysicalDevice,
-        surfaces: Option<&Surfaces>,
+        surfaces: &Surfaces,
     ) -> bool {
-        let surfaces = surfaces.expect("Not acquired surface");
 
         let extension_support = Surfaces::check_swapchain_support(instance, physical_device);
 

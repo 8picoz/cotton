@@ -2,6 +2,7 @@ use std::env;
 use std::mem::swap;
 use ash::vk::{Extent2D, Extent3D, Format};
 use log::debug;
+use log::Level::Debug;
 
 use cotton::constants::{DEFAULT_WINDOW_HEIGHT, DEFAULT_WINDOW_WIDTH};
 use cotton::renderer::acceleration_structures::AccelerationStructures;
@@ -18,6 +19,8 @@ fn main() {
     env::set_var("RUST_LOG", "info");
     env::set_var("RUST_LOG", "DEBUG");
     env_logger::init();
+
+    debug!("Start");
 
     //to_window();
     to_image();
@@ -90,6 +93,7 @@ fn to_window() {
 
 //TODO
 fn to_image() {
+
     let extent3d = Extent3D::builder()
         .width(DEFAULT_WINDOW_WIDTH)
         .height(DEFAULT_WINDOW_HEIGHT)
@@ -111,7 +115,6 @@ fn to_image() {
     //backends.display_support_extension();
 
     let graphics_queue = backends.create_graphics_queue(0);
-    let present_queue = backends.create_present_queue(0);
 
     let render_passes = RenderPasses::new(
         &backends,
@@ -151,4 +154,6 @@ fn to_image() {
         graphics_queue,
         target_image.image_views[0],
     );
+
+    debug!("done");
 }
