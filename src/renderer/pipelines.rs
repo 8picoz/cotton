@@ -1,7 +1,7 @@
 use std::ffi::{CStr, CString};
 use ash::{Device, Instance, vk};
 use ash::extensions::khr::{AccelerationStructure, RayTracingPipeline};
-use ash::vk::{AccelerationStructureNV, DeferredOperationKHR, DescriptorBufferInfo, DescriptorImageInfo, DescriptorPoolCreateInfo, DescriptorPoolSize, DescriptorSetAllocateInfo, DescriptorSetLayout, DescriptorSetLayoutBinding, DescriptorSetLayoutCreateInfo, DescriptorSetVariableDescriptorCountAllocateInfo, DescriptorType, Extent2D, ImageLayout, ImageView, PhysicalDevice, PhysicalDeviceProperties2, PhysicalDeviceRayTracingPipelinePropertiesKHR, Pipeline, PipelineCache, PipelineLayout, PipelineLayoutCreateInfo, PipelineShaderStageCreateInfo, PushConstantRange, Queue, RayTracingPipelineCreateInfoKHR, RayTracingShaderGroupCreateInfoKHR, RayTracingShaderGroupTypeKHR, SHADER_UNUSED_KHR, ShaderModule, ShaderStageFlags, WHOLE_SIZE, WriteDescriptorSet, WriteDescriptorSetAccelerationStructureKHR};
+use ash::vk::{AccelerationStructureNV, BufferUsageFlags, DeferredOperationKHR, DescriptorBufferInfo, DescriptorImageInfo, DescriptorPoolCreateInfo, DescriptorPoolSize, DescriptorSetAllocateInfo, DescriptorSetLayout, DescriptorSetLayoutBinding, DescriptorSetLayoutCreateInfo, DescriptorSetVariableDescriptorCountAllocateInfo, DescriptorType, DeviceSize, Extent2D, ImageAspectFlags, ImageLayout, ImageSubresourceRange, ImageView, MemoryPropertyFlags, PhysicalDevice, PhysicalDeviceProperties2, PhysicalDeviceRayTracingPipelinePropertiesKHR, Pipeline, PipelineCache, PipelineLayout, PipelineLayoutCreateInfo, PipelineShaderStageCreateInfo, PushConstantRange, Queue, RayTracingPipelineCreateInfoKHR, RayTracingShaderGroupCreateInfoKHR, RayTracingShaderGroupTypeKHR, SHADER_UNUSED_KHR, ShaderModule, ShaderStageFlags, StridedDeviceAddressRegionKHR, WHOLE_SIZE, WriteDescriptorSet, WriteDescriptorSetAccelerationStructureKHR};
 use bytes::Buf;
 use log::debug;
 use crate::buffers::Buffers;
@@ -151,6 +151,7 @@ impl<'a> Pipelines<'a> {
             .dst_binding(1)
             .dst_array_element(0)
             .descriptor_type(DescriptorType::STORAGE_IMAGE)
+            .image_info(&image_info)
             .build();
 
         let vertex_info = [DescriptorBufferInfo::builder()
@@ -192,8 +193,6 @@ impl<'a> Pipelines<'a> {
                 &[],
             )
         }
-
-        //ここから
 
         //stage
 
@@ -301,6 +300,74 @@ impl<'a> Pipelines<'a> {
                 //なんでVecで帰ってくる？
             ).unwrap()[0]
         };
+
+        let shader_group_handle_size = rt_pipeline_properties.shader_group_handle_size as usize;
+        let shader_program_size = shader_group_handle_size;
+
+        let group_handles = unsafe {
+            rt_pipeline.get_ray_tracing_shader_group_handles(
+                pipeline,
+                0,
+                shader_groups.len() as u32,
+                shader_groups.len() * shader_program_size,
+            ).unwrap()
+        };
+
+        debug!("sbt");
+
+        //alignmentしなくて良い？
+        let table_size =
+            shader_groups.len() * shader_group_handle_size;
+
+        let mut table_data = vec![0u8; table_size];
+        for i in 0..shader_groups.len() {
+            //handleサイズ分移動してから,
+            table_data[i * shader_program_size
+                ..i * shader_program_size
+                    + shader_program_size]
+                .copy_from_slice(
+                    &group_handles[i * shader_program_size
+                        ..i * shader_program_size
+                        + shader_program_size],
+                );
+        }
+
+        let mut shader_binding_table_buffer = Buffers::new(
+            &backends.device,
+            backends.device_memory_properties,
+            table_size as u64,
+            BufferUsageFlags::SHADER_DEVICE_ADDRESS,
+            MemoryPropertyFlags::HOST_VISIBLE
+                | MemoryPropertyFlags::HOST_COHERENT
+                | MemoryPropertyFlags::DEVICE_LOCAL
+        );
+
+        shader_binding_table_buffer.store(&table_data);
+
+        let sbt_address = shader_binding_table_buffer.get_buffer_address();
+
+        let shader_program_size = DeviceSize::from(shader_program_size);
+
+        let sbt_raygen_region = StridedDeviceAddressRegionKHR::builder()
+            .device_address(sbt_address + 0)
+            .size(shader_program_size)
+            .stride(shader_program_size)
+            .build();
+
+        let sbt_miss_region = StridedDeviceAddressRegionKHR::builder()
+            .device_address(sbt_address + 1 * shader_program_size)
+            .size(shader_program_size)
+            .stride(shader_program_size)
+            .build();
+
+        let sbt_hit_region = StridedDeviceAddressRegionKHR::builder()
+            .device_address(sbt_address + 2 * shader_program_size)
+            .size(2 * shader_program_size)
+            .stride(shader_program_size)
+            .build();
+
+        //なし
+        let sbt_call_region = StridedDeviceAddressRegionKHR::default();
 
         Self {
             device: &backends.device,
