@@ -27,19 +27,9 @@ impl<'a> TopLevelAccelerationStructures<'a> {
             .transform_offset(0)
             .build();
 
-        let build_command_buffer = {
-            let allocate_info = CommandBufferAllocateInfo::builder()
-                .command_buffer_count(1)
-                .command_pool(backends.commands.command_pool)
-                .level(CommandBufferLevel::PRIMARY)
-                .build();
-
-            let command_buffers = unsafe {
-                backends.device.allocate_command_buffers(&allocate_info).unwrap()
-            };
-
-            command_buffers[0]
-        };
+        let command_pool = backends.create_graphics_command_pool();
+        let command_buffers = backends.create_command_buffers(command_pool, 1);
+        let build_command_buffer = command_buffers[0];
 
         let instances = AccelerationStructureGeometryInstancesDataKHR::builder()
             .array_of_pointers(false)
@@ -150,7 +140,7 @@ impl<'a> TopLevelAccelerationStructures<'a> {
             ).expect("failed queue submit");
 
             backends.device.queue_wait_idle(graphics_queue).unwrap();
-            backends.device.free_command_buffers(backends.commands.command_pool, &[build_command_buffer]);
+            backends.device.free_command_buffers(command_pool, &command_buffers);
         }
 
         Self {

@@ -5,17 +5,15 @@ use ash::vk;
 use ash::{Device, Entry, Instance};
 use ash::extensions::ext::DebugUtils;
 use ash::extensions::khr::{AccelerationStructure, DeferredHostOperations, RayTracingPipeline, Surface, Swapchain, Win32Surface};
-use ash::vk::{CommandPool, CommandPoolCreateFlags, CommandPoolCreateInfo, DebugUtilsMessengerCreateInfoEXT, DeviceCreateInfo, DeviceQueueCreateInfo, ExtScalarBlockLayoutFn, KhrGetMemoryRequirements2Fn, KhrSpirv14Fn, PhysicalDevice, PhysicalDeviceAccelerationStructureFeaturesKHR, PhysicalDeviceBufferDeviceAddressFeatures, PhysicalDeviceDescriptorIndexingFeaturesEXT, PhysicalDeviceFeatures, PhysicalDeviceFeatures2, PhysicalDeviceImagelessFramebufferFeaturesKHR, PhysicalDeviceMemoryProperties, PhysicalDeviceProperties2, PhysicalDeviceRayTracingPipelineFeaturesKHR, PhysicalDeviceRayTracingPipelinePropertiesKHR, PhysicalDeviceScalarBlockLayoutFeaturesEXT, PhysicalDeviceShaderFloat16Int8Features, PhysicalDeviceVulkan12Features, PhysicalDeviceVulkanMemoryModelFeatures, PhysicalDeviceVulkanMemoryModelFeaturesKHR, Queue};
+use ash::vk::{CommandBuffer, CommandBufferAllocateInfo, CommandBufferLevel, CommandPool, CommandPoolCreateFlags, CommandPoolCreateInfo, DebugUtilsMessengerCreateInfoEXT, DeviceCreateInfo, DeviceQueueCreateInfo, ExtScalarBlockLayoutFn, KhrGetMemoryRequirements2Fn, KhrSpirv14Fn, PhysicalDevice, PhysicalDeviceAccelerationStructureFeaturesKHR, PhysicalDeviceBufferDeviceAddressFeatures, PhysicalDeviceDescriptorIndexingFeaturesEXT, PhysicalDeviceFeatures, PhysicalDeviceFeatures2, PhysicalDeviceImagelessFramebufferFeaturesKHR, PhysicalDeviceMemoryProperties, PhysicalDeviceProperties2, PhysicalDeviceRayTracingPipelineFeaturesKHR, PhysicalDeviceRayTracingPipelinePropertiesKHR, PhysicalDeviceScalarBlockLayoutFeaturesEXT, PhysicalDeviceShaderFloat16Int8Features, PhysicalDeviceVulkan12Features, PhysicalDeviceVulkanMemoryModelFeatures, PhysicalDeviceVulkanMemoryModelFeaturesKHR, Queue};
 use log::{debug, info};
 use tobj::LoadError::NormalParseError;
-use commands::Commands;
 use queue_family_indices::QueueFamilyIndices;
 use surfaces::Surfaces;
 use crate::renderer::validation_layer::{REQUIRED_LAYERS, ValidationLayer};
 use crate::window_handlers::WindowHandlers;
 
 pub mod surfaces;
-pub mod commands;
 pub mod queue_family_indices;
 
 pub struct Backends {
@@ -24,7 +22,6 @@ pub struct Backends {
     pub physical_device: PhysicalDevice,
     pub device: Device,
     pub surfaces: Option<Surfaces>,
-    pub commands: Commands,
     pub device_memory_properties: PhysicalDeviceMemoryProperties,
     queue_family_indices: QueueFamilyIndices,
 }
@@ -67,21 +64,49 @@ impl Backends {
             instance.get_physical_device_memory_properties(physical_device)
         };
 
-        let commands = Commands::new(
-            &device,
-            queue_family_indices.graphics_family.unwrap()
-        );
-
         Ok(Self {
             entry,
             instance,
             physical_device,
             device,
-            commands,
             surfaces,
             device_memory_properties,
             queue_family_indices,
         })
+    }
+
+    pub fn create_command_pool(&self, queue_family_index: u32) -> CommandPool {
+        let command_pool_create_info = CommandPoolCreateInfo::builder()
+            .queue_family_index(queue_family_index)
+            .flags(CommandPoolCreateFlags::RESET_COMMAND_BUFFER)
+            .build();
+
+        unsafe {
+            self.device.create_command_pool(&command_pool_create_info, None).unwrap()
+        }
+    }
+
+    pub fn create_graphics_command_pool(&self) -> CommandPool {
+        let command_pool_create_info = CommandPoolCreateInfo::builder()
+            .queue_family_index(self.queue_family_indices.graphics_family.unwrap())
+            .flags(CommandPoolCreateFlags::RESET_COMMAND_BUFFER)
+            .build();
+
+        unsafe {
+            self.device.create_command_pool(&command_pool_create_info, None).unwrap()
+        }
+    }
+
+    pub fn create_command_buffers(&self, command_pool: CommandPool, size: u32) -> Vec<CommandBuffer> {
+        let command_buffer_alloc_info = CommandBufferAllocateInfo::builder()
+            .command_pool(command_pool)
+            .level(CommandBufferLevel::PRIMARY)
+            .command_buffer_count(size)
+            .build();
+
+        unsafe {
+            self.device.allocate_command_buffers(&command_buffer_alloc_info).unwrap()
+        }
     }
 
     fn create_instance(entry: &Entry, enable_validation_layer: bool) -> anyhow::Result<Instance> {

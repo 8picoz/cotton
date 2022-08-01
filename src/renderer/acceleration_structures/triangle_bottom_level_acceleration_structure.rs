@@ -6,7 +6,6 @@ use log::debug;
 use crate::buffers::Buffers;
 use crate::renderer::backends::Backends;
 use classical_raytracer_shader::Vertex;
-use crate::renderer::backends::commands::Commands;
 use crate::renderer::mesh_buffer::MeshBuffer;
 
 //instanceを作って
@@ -14,7 +13,7 @@ use crate::renderer::mesh_buffer::MeshBuffer;
 //TLASを作成する
 
 pub struct TriangleBottomLevelAccelerationStructure<'a> {
-    device: &'a Device,
+    backends: &'a Backends,
     pub acceleration_structure: &'a AccelerationStructure,
     pub bottom_acceleration_structure: AccelerationStructureKHR,
     pub bottom_acceleration_buffer: Buffers<'a>,
@@ -54,16 +53,15 @@ impl<'a> TriangleBottomLevelAccelerationStructure<'a> {
             bottom_acceleration_structure,
             bottom_acceleration_buffer
         ) = Self::create_bottom_acceleration(
-            &backends.device,
+            &backends,
             backends.device_memory_properties,
             &acceleration_structure,
             &mesh_buffer,
-            &backends.commands,
             graphics_queue,
         );
 
         Self {
-            device: &backends.device,
+            backends,
             acceleration_structure,
             bottom_acceleration_structure,
             bottom_acceleration_buffer,
@@ -72,11 +70,10 @@ impl<'a> TriangleBottomLevelAccelerationStructure<'a> {
     }
 
     fn create_bottom_acceleration(
-        device: &'a Device,
+        backends: &'a Backends,
         device_memory_properties: PhysicalDeviceMemoryProperties,
         acceleration_structure: &AccelerationStructure,
         mesh_buffer: &MeshBuffer,
-        commands: &Commands,
         graphics_queue: Queue,
     ) -> (AccelerationStructureKHR, Buffers<'a>) {
         let geometry = AccelerationStructureGeometryKHR::builder()
@@ -128,7 +125,7 @@ impl<'a> TriangleBottomLevelAccelerationStructure<'a> {
         };
 
         let scratch_buffer = Buffers::new(
-            device,
+            &backends.device,
             device_memory_properties,
             memory_requirements.build_scratch_size,
             BufferUsageFlags::SHADER_DEVICE_ADDRESS
@@ -143,7 +140,7 @@ impl<'a> TriangleBottomLevelAccelerationStructure<'a> {
         };
 
         let bottom_accel_buffer = Buffers::new(
-            device,
+            &backends.device,
             device_memory_properties,
             memory_requirements.acceleration_structure_size,
             BufferUsageFlags::ACCELERATION_STRUCTURE_STORAGE_KHR
@@ -177,10 +174,12 @@ impl<'a> TriangleBottomLevelAccelerationStructure<'a> {
             .flags(CommandBufferUsageFlags::ONE_TIME_SUBMIT)
             .build();
 
-        let build_cb = commands.command_buffers[0];
+        let command_pool = backends.create_graphics_command_pool();
+        let command_buffers = backends.create_command_buffers(command_pool, 1);
+        let build_cb = command_buffers[0];
 
         unsafe {
-            device.begin_command_buffer(
+            backends.device.begin_command_buffer(
                 build_cb,
                 &cb_begin_info
             ).unwrap();
@@ -195,9 +194,9 @@ impl<'a> TriangleBottomLevelAccelerationStructure<'a> {
                 build_infos,
                 build_range_infos,
             );
-            device.end_command_buffer(build_cb).unwrap();
+            backends.device.end_command_buffer(build_cb).unwrap();
 
-            device.queue_submit(
+            backends.device.queue_submit(
                 graphics_queue,
                 &[SubmitInfo::builder()
                     .command_buffers(&[build_cb])
@@ -207,11 +206,11 @@ impl<'a> TriangleBottomLevelAccelerationStructure<'a> {
             ).expect("submit failed");
 
             //Queueの処理が終わるまで待機
-            device.queue_wait_idle(graphics_queue).unwrap();
-            device.free_command_buffers(commands.command_pool, &[build_cb]);
+            backends.device.queue_wait_idle(graphics_queue).unwrap();
+            backends.device.free_command_buffers(command_pool, &command_buffers);
 
-            device.destroy_buffer(scratch_buffer.buffer, None);
-            device.free_memory(scratch_buffer.memory, None);
+            backends.device.destroy_buffer(scratch_buffer.buffer, None);
+            backends.device.free_memory(scratch_buffer.memory, None);
         }
 
         (bottom_accel, bottom_accel_buffer)

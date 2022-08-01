@@ -5,7 +5,6 @@ use log::debug;
 use crate::renderer::acceleration_structures::top_level_acceleration_structures::TopLevelAccelerationStructures;
 use crate::renderer::acceleration_structures::triangle_bottom_level_acceleration_structure::TriangleBottomLevelAccelerationStructure;
 use crate::renderer::backends::Backends;
-use crate::renderer::backends::commands::Commands;
 use crate::scene::Scene;
 
 pub mod triangle_bottom_level_acceleration_structure;

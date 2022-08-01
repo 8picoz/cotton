@@ -10,6 +10,7 @@ use cotton::renderer::images::Images;
 use cotton::renderer::pipelines::Pipelines;
 
 use cotton::renderer::render_passes::RenderPasses;
+use cotton::renderer::Renderer;
 use cotton::renderer::shader_module::ShaderModules;
 use cotton::renderer::swapchains::Swapchains;
 use cotton::scene::Scene;
@@ -144,6 +145,9 @@ fn to_image() {
         graphics_queue
     );
 
+    let image = target_image.images[0];
+    let image_view = target_image.image_views[0];
+
     let pipelines = Pipelines::new(
         &backends,
         shader_modules,
@@ -152,8 +156,24 @@ fn to_image() {
         &triangle_blas.mesh_buffer,
         tlas,
         graphics_queue,
-        target_image.image_views[0],
+        image_view,
     );
 
+    let renderer = Renderer::new(
+        &backends,
+        pipelines,
+    );
+
+    renderer.rendering(
+        image,
+        graphics_queue
+    ).unwrap();
+
     debug!("done");
+}
+
+fn save_image() -> anyhow::Result<()> {
+
+
+    Ok(())
 }

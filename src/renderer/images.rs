@@ -58,8 +58,11 @@ impl<'a> Images<'a> {
             device.create_image_view(&image_view_create_info, None).unwrap()
         };
 
+        debug!("Image: {:?}, ImageView: {:?}", image, image_view);
+
         Self {
             device,
+            //一つだけ生成
             images: vec![image],
             image_views: vec![image_view],
         }

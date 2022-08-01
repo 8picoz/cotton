@@ -137,6 +137,8 @@ impl<'a> Pipelines<'a> {
             .push_next(&mut acceleration_structure_info)
             .build();
 
+        //Descriptor部分はPipelineに含めないほうが良い
+
         //AccelerationStructureだとdescriptor_countが自動セットされないので手動で設定する必要がある
         acceleration_structure_write.descriptor_count = 1;
 
@@ -346,7 +348,7 @@ impl<'a> Pipelines<'a> {
 
         let sbt_address = shader_binding_table_buffer.get_buffer_address();
 
-        let shader_program_size = DeviceSize::from(shader_program_size);
+        let shader_program_size = DeviceSize::from(shader_program_size as u64);
 
         let sbt_raygen_region = StridedDeviceAddressRegionKHR::builder()
             .device_address(sbt_address + 0)
@@ -368,6 +370,14 @@ impl<'a> Pipelines<'a> {
 
         //なし
         let sbt_call_region = StridedDeviceAddressRegionKHR::default();
+
+        let range = ImageSubresourceRange::builder()
+            .aspect_mask(ImageAspectFlags::COLOR)
+            .base_mip_level(0)
+            .level_count(1)
+            .base_array_layer(0)
+            .layer_count(1)
+            .build();
 
         Self {
             device: &backends.device,
