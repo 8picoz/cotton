@@ -1,18 +1,19 @@
 use std::ops::Deref;
 use ash::Device;
-use ash::vk::{ComponentMapping, ComponentSwizzle, Extent2D, Extent3D, Format, Image, ImageAspectFlags, ImageCreateInfo, ImageSubresourceRange, ImageTiling, ImageType, ImageUsageFlags, ImageView, ImageViewCreateInfo, ImageViewType, SampleCountFlags, SharingMode};
+use ash::vk::{ComponentMapping, ComponentSwizzle, Extent2D, Extent3D, Format, Image, ImageAspectFlags, ImageCreateInfo, ImageSubresourceRange, ImageTiling, ImageType, ImageUsageFlags, ImageView, ImageViewCreateInfo, ImageViewType, MemoryAllocateInfo, MemoryPropertyFlags, SampleCountFlags, SharingMode};
 use log::debug;
+use crate::get_memory_type_index;
 use crate::renderer::backends::Backends;
 
 pub struct Images<'a> {
-    pub device: &'a Device,
+    backends: &'a Backends,
     pub images: Vec<Image>,
     pub image_views: Vec<ImageView>,
 }
 
 impl<'a> Images<'a> {
     pub fn new(
-        device: &'a Device,
+        backends: &'a Backends,
         count: usize,
         format: Format,
         extent: Extent3D,
@@ -36,8 +37,29 @@ impl<'a> Images<'a> {
             .build();
 
         let image = unsafe {
-            device.create_image(&image_create_info, None).unwrap()
+            backends.device.create_image(&image_create_info, None).unwrap()
         };
+
+        let device_memory = unsafe {
+            let memory_requirement = backends.device.get_image_memory_requirements(image);
+            let memory_alloc_info = MemoryAllocateInfo::builder()
+                .allocation_size(memory_requirement.size)
+                .memory_type_index(
+                    get_memory_type_index(
+                        &backends.device_memory_properties,
+                        memory_requirement.memory_type_bits,
+                        MemoryPropertyFlags::DEVICE_LOCAL,
+                    ).unwrap()
+                );
+
+            unsafe {
+                backends.device.allocate_memory(&memory_alloc_info, None).unwrap()
+            }
+        };
+
+        unsafe {
+            backends.device.bind_image_memory(image, device_memory, 0).unwrap();
+        }
         
         let image_view_create_info = ImageViewCreateInfo::builder()
             .view_type(ImageViewType::TYPE_2D)
@@ -55,13 +77,13 @@ impl<'a> Images<'a> {
             .build();
 
         let image_view = unsafe {
-            device.create_image_view(&image_view_create_info, None).unwrap()
+            backends.device.create_image_view(&image_view_create_info, None).unwrap()
         };
 
         debug!("Image: {:?}, ImageView: {:?}", image, image_view);
 
         Self {
-            device,
+            backends,
             //一つだけ生成
             images: vec![image],
             image_views: vec![image_view],
@@ -70,7 +92,7 @@ impl<'a> Images<'a> {
 
     //画像単体で出力したいならvk::Imageを素のまま作ってそこに保存すれば良い
     pub fn create_images_for_swapchain_images(
-        device: &'a Device,
+        backends: &'a Backends,
         images: Vec<Image>,
         swapchain_image_format: Format,
     ) -> Self {
@@ -101,13 +123,13 @@ impl<'a> Images<'a> {
                 )
                 .build();
 
-            image_views.push(unsafe { device.create_image_view(&create_info, None) }.unwrap());
+            image_views.push(unsafe { backends.device.create_image_view(&create_info, None) }.unwrap());
         }
 
         debug!("Create Swapchain Image Views");
 
         Self {
-            device,
+            backends,
             images,
             image_views,
         }
@@ -118,7 +140,7 @@ impl Drop for Images<'_> {
     fn drop(&mut self) {
         unsafe {
             for image_view in self.image_views.clone() {
-                self.device.destroy_image_view(image_view, None);
+                self.backends.device.destroy_image_view(image_view, None);
             }
         }
     }

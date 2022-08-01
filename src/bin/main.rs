@@ -42,10 +42,10 @@ fn to_window() {
     let present_queue = backends.create_present_queue(0);
 
     let swapchains = Swapchains::new(&backends, window_size);
-    let swapchain_images = swapchains.get_swapchain_images(&backends.device);
+    let swapchain_images = swapchains.get_swapchain_images(&backends);
 
     let temp_image = Images::new(
-        &backends.device,
+        &backends,
         1,
         swapchains.format,
         Extent3D::builder()
@@ -111,7 +111,7 @@ fn to_image() {
         cotton::renderer::backends::Backends::new(None, true)
             .expect("Failed to create backends");
 
-    let target_image = Images::new(&backends.device, 1, format, extent3d);
+    let target_image = Images::new(&backends, 1, format, extent3d);
 
     //backends.display_support_extension();
 

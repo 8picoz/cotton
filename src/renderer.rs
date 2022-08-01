@@ -45,6 +45,7 @@ impl<'a> Renderer<'a> {
         let command_buffers = self.backends.create_command_buffers(command_pool, 1);
         let command_buffer = command_buffers[0];
 
+        //clear image
         unsafe {
             self.backends
                 .device

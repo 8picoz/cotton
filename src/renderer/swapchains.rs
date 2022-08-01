@@ -96,12 +96,12 @@ impl Swapchains {
         }
     }
 
-    pub fn get_swapchain_images<'a>(&'a self, device: &'a Device) -> Images {
+    pub fn get_swapchain_images<'a>(&'a self, backends: &'a Backends) -> Images {
         debug!("get swapchain images");
 
         let images = unsafe { self.swapchain.get_swapchain_images(self.swapchain_khr).unwrap() };
 
-        Images::create_images_for_swapchain_images(device, images, self.format)
+        Images::create_images_for_swapchain_images(backends, images, self.format)
     }
 }
 
