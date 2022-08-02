@@ -104,8 +104,10 @@ impl<'a> Images<'a> {
                 .subresource_range(
                     ImageSubresourceRange::builder()
                         .aspect_mask(ImageAspectFlags::COLOR)
+                        .base_mip_level(0)
                         .level_count(1)
-                        .base_array_layer(1)
+                        .base_array_layer(0)
+                        .layer_count(1)
                         .build()
                 ).build();
 

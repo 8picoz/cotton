@@ -11,7 +11,7 @@ pub mod renderer;
 pub mod buffers;
 pub mod scene;
 
-fn get_memory_type_index(
+pub fn get_memory_type_index(
     physical_device_memory_properties: &PhysicalDeviceMemoryProperties,
     type_filter: u32,
     property_flags: MemoryPropertyFlags,

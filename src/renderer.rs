@@ -73,7 +73,7 @@ impl<'a> Renderer<'a> {
                 image,
                 ImageLayout::GENERAL,
                 &ClearColorValue {
-                    float32: [0.0, 0.0, 0.0, 0.0],
+                    float32: [0.0, 0.0, 1.0, 1.0],
                 },
                 &[range]
             );
