@@ -20,6 +20,7 @@ glam = "0.20.5"
 bytes = "1.1.0"
 classical_raytracer_shader = { path = "./shaders/classical_raytracer_shader" }
 png = "0.17.5"
+bytemuck = "1.11.0"
 
 [build-dependencies]
 spirv-builder = { git = "https://github.com/EmbarkStudios/rust-gpu" }
