@@ -1,6 +1,6 @@
 use std::ops::Deref;
 use ash::Device;
-use ash::vk::{ComponentMapping, ComponentSwizzle, Extent2D, Extent3D, Format, Image, ImageAspectFlags, ImageCreateInfo, ImageSubresourceRange, ImageTiling, ImageType, ImageUsageFlags, ImageView, ImageViewCreateInfo, ImageViewType, MemoryAllocateInfo, MemoryPropertyFlags, SampleCountFlags, SharingMode};
+use ash::vk::{AccessFlags, CommandBufferBeginInfo, CommandBufferUsageFlags, ComponentMapping, ComponentSwizzle, DependencyFlags, Extent2D, Extent3D, Fence, Format, Image, ImageAspectFlags, ImageCreateInfo, ImageLayout, ImageMemoryBarrier, ImageSubresourceRange, ImageTiling, ImageType, ImageUsageFlags, ImageView, ImageViewCreateInfo, ImageViewType, MemoryAllocateInfo, MemoryPropertyFlags, PipelineStageFlags, Queue, SampleCountFlags, SharingMode, SubmitInfo};
 use log::debug;
 use crate::get_memory_type_index;
 use crate::renderer::backends::Backends;
@@ -17,6 +17,7 @@ impl<'a> Images<'a> {
         count: usize,
         format: Format,
         extent: Extent3D,
+        graphics_queue: Queue,
     ) -> Self {
 
         let image_create_info = ImageCreateInfo::builder()
@@ -40,21 +41,22 @@ impl<'a> Images<'a> {
             backends.device.create_image(&image_create_info, None).unwrap()
         };
 
-        let device_memory = unsafe {
-            let memory_requirement = backends.device.get_image_memory_requirements(image);
-            let memory_alloc_info = MemoryAllocateInfo::builder()
-                .allocation_size(memory_requirement.size)
-                .memory_type_index(
-                    get_memory_type_index(
-                        &backends.device_memory_properties,
-                        memory_requirement.memory_type_bits,
-                        MemoryPropertyFlags::DEVICE_LOCAL,
-                    ).unwrap()
-                );
+        let memory_requirement = unsafe {
+            backends.device.get_image_memory_requirements(image)
+        };
 
-            unsafe {
-                backends.device.allocate_memory(&memory_alloc_info, None).unwrap()
-            }
+        let memory_alloc_info = MemoryAllocateInfo::builder()
+            .allocation_size(memory_requirement.size)
+            .memory_type_index(
+                get_memory_type_index(
+                    &backends.device_memory_properties,
+                    memory_requirement.memory_type_bits,
+                    MemoryPropertyFlags::DEVICE_LOCAL,
+                ).unwrap()
+            );
+
+        let device_memory = unsafe {
+            backends.device.allocate_memory(&memory_alloc_info, None).unwrap()
         };
 
         unsafe {
@@ -79,6 +81,63 @@ impl<'a> Images<'a> {
         let image_view = unsafe {
             backends.device.create_image_view(&image_view_create_info, None).unwrap()
         };
+
+        //Initialize
+        let command_pool = backends.create_graphics_command_pool();
+        let command_buffers = backends.create_command_buffers(command_pool, 1);
+        let command_buffer = command_buffers[0];
+
+        unsafe {
+            backends.device.begin_command_buffer(
+                command_buffer,
+                &CommandBufferBeginInfo::builder()
+                    .flags(CommandBufferUsageFlags::ONE_TIME_SUBMIT)
+                    .build(),
+            ).unwrap();
+
+            let image_barrier = ImageMemoryBarrier::builder()
+                .src_access_mask(AccessFlags::empty())
+                .dst_access_mask(AccessFlags::empty())
+                .old_layout(ImageLayout::UNDEFINED)
+                .new_layout(ImageLayout::GENERAL)
+                .image(image)
+                .subresource_range(
+                    ImageSubresourceRange::builder()
+                        .aspect_mask(ImageAspectFlags::COLOR)
+                        .level_count(1)
+                        .base_array_layer(1)
+                        .build()
+                ).build();
+
+            backends.device.cmd_pipeline_barrier(
+                command_buffer,
+                PipelineStageFlags::ALL_COMMANDS,
+                PipelineStageFlags::ALL_COMMANDS,
+                DependencyFlags::empty(),
+                &[],
+                &[],
+                &[image_barrier],
+            );
+
+            backends.device.end_command_buffer(command_buffer).unwrap();
+        }
+
+        let submit_infos = [
+            SubmitInfo::builder()
+                .command_buffers(&command_buffers)
+                .build()
+        ];
+
+        unsafe {
+            backends
+                .device
+                .queue_submit(graphics_queue, &submit_infos, Fence::null())
+                .expect("queue submit failed");
+
+            backends.device.queue_wait_idle(graphics_queue).unwrap();
+            backends.device.free_command_buffers(command_pool, &command_buffers);
+            backends.device.destroy_command_pool(command_pool, None);
+        }
 
         debug!("Image: {:?}, ImageView: {:?}", image, image_view);
 

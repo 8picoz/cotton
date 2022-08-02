@@ -130,6 +130,9 @@ impl<'a> Renderer<'a> {
                     command_pool,
                     &[command_buffer]
                 );
+            self.backends
+                .device
+                .destroy_command_pool(command_pool, None);
         }
 
         Ok(())

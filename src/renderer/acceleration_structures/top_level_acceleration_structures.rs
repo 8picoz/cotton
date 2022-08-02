@@ -141,6 +141,7 @@ impl<'a> TopLevelAccelerationStructures<'a> {
 
             backends.device.queue_wait_idle(graphics_queue).unwrap();
             backends.device.free_command_buffers(command_pool, &command_buffers);
+            backends.device.destroy_command_pool(command_pool, None);
         }
 
         Self {

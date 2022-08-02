@@ -208,6 +208,7 @@ impl<'a> TriangleBottomLevelAccelerationStructure<'a> {
             //Queueの処理が終わるまで待機
             backends.device.queue_wait_idle(graphics_queue).unwrap();
             backends.device.free_command_buffers(command_pool, &command_buffers);
+            backends.device.destroy_command_pool(command_pool, None);
 
             backends.device.destroy_buffer(scratch_buffer.buffer, None);
             backends.device.free_memory(scratch_buffer.memory, None);

@@ -52,7 +52,8 @@ fn to_window() {
             .width(swapchains.extent.width)
             .height(swapchains.extent.height)
             .depth(1)
-            .build()
+            .build(),
+        graphics_queue,
     );
 
     let render_passes = RenderPasses::new(&backends, swapchains.format, swapchain_images.image_views.clone(), swapchains.extent);
@@ -111,11 +112,11 @@ fn to_image() {
         cotton::renderer::backends::Backends::new(None, true)
             .expect("Failed to create backends");
 
-    let target_image = Images::new(&backends, 1, format, extent3d);
-
     //backends.display_support_extension();
 
     let graphics_queue = backends.create_graphics_queue(0);
+
+    let target_image = Images::new(&backends, 1, format, extent3d, graphics_queue);
 
     let render_passes = RenderPasses::new(
         &backends,
@@ -169,11 +170,14 @@ fn to_image() {
         graphics_queue
     ).unwrap();
 
+    save_image().unwrap();
+
     debug!("done");
 }
 
 fn save_image() -> anyhow::Result<()> {
 
 
+    debug!("save image");
     Ok(())
 }
